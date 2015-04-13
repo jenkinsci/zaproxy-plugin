@@ -1,0 +1,90 @@
+<!--
+The MIT License (MIT)
+
+Copyright (c) 2015 ludovicRoucoux
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<!--
+	This jelly script is used for per-project configuration.
+
+	See global.jelly for a general discussion about jelly script.
+	-->
+	
+	<f:entry title="Timeout for ZAProxy initialization" field="timeoutInSec"
+	description="Enter a value in seconde">
+		<f:number default="60" clazz="required positive-number" />
+	</f:entry>
+	
+	<f:radioBlock title="${%ZAProxy is installed by Jenkins}" name="autoInstall" value="true" 
+	checked="${instance.autoInstall == true}" inline="true">
+		<f:entry title="${%Tool to use}" field="toolUsed">
+			<f:select />
+		</f:entry>
+	</f:radioBlock>
+	
+	<f:radioBlock title="${%ZAProxy is already installed}" name="autoInstall" value="false" 
+	checked="${instance.autoInstall == false}" inline="true">
+		<f:entry title="${%ZAProxy Home}" field="zapHome">
+			<f:textbox default="ZAPROXY_HOME" />
+		</f:entry>
+	</f:radioBlock>
+	
+	<f:section title="${%Setup}">
+		<f:entry title="${%Load session}" field="filenameLoadSession">
+			<f:textbox />
+		</f:entry>	
+	
+		<f:entry title="${%Target URL}" field="targetURL">
+			<f:textbox clazz="required" />
+		</f:entry>
+		
+		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+		
+		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
+		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+			
+		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
+			<f:entry>
+				<table width="100%">
+					<f:entry title="${%Choose format report}" field="chosenFormat">
+						<f:select />
+					</f:entry>
+					<f:entry title="${%Filename for report}" field="filenameReports">
+						<f:textbox clazz="required" />
+					</f:entry>
+				</table>
+			</f:entry>
+		</f:optionalBlock>
+				
+		<f:optionalBlock title="${%Save session}"  field="saveSession" inline="true">	
+			<f:entry>
+				<table width="100%">
+					<f:entry title="${%Filename for session}" field="filenameSaveSession">
+						<f:textbox clazz="required" />
+					</f:entry>
+				</table>	
+			</f:entry>
+		</f:optionalBlock>
+	</f:section>
+	
+</j:jelly>
