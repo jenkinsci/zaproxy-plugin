@@ -18,7 +18,7 @@
 
 		<name>ZAP Jenkins Plugin</name>
 		<description>This plugin allow you to launch the security software ZAProxy via Jenkins.</description>
-		<url>https://wiki.jenkins-ci.org/display/JENKINS/ZAP+Plugin</url>
+		<url>https://wiki.jenkins-ci.org/display/JENKINS/ZAPROXY+Plugin</url>
 		<licenses>
 				<license>
 						<name>MIT License</name>
@@ -32,11 +32,10 @@
 						<email>ludovic.roucoux@gmail.com</email>
 				</developer>
 		</developers>
-
 		<scm>
-				<connection>scm:git:git://github.com/jenkinsci/zaproxy-jenkins-plugin.git</connection>
-				<developerConnection>scm:git:git@github.com:jenkinsci/zaproxy-jenkins-plugin.git</developerConnection>
-				<url>http://github.com/jenkinsci/zaproxy-jenkins-plugin</url>
+				<connection>scm:git:ssh://github.com/jenkinsci/zaproxy-plugin.git</connection>
+				<developerConnectionscm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
+				<url>http://github.com/jenkinsci/zaproxy-plugin</url>
 		</scm>
 				
 		<repositories>
