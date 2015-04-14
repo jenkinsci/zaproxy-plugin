@@ -11,13 +11,13 @@
 				<relativePath />
 		</parent>
 		<groupId>fr.novia</groupId>
-		<artifactId>zaproxy-jenkins</artifactId>
+		<artifactId>zaproxy</artifactId>
 		<version>1.0</version>
 		<packaging>hpi</packaging>
 
 		<name>ZAP Jenkins Plugin</name>
 		<description>This plugin allow you to launch the security software ZAProxy via Jenkins.</description>
-		<url>https://wiki.jenkins-ci.org/display/JENKINS/ZAPROXY+Plugin</url>
+		<url>https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin</url>
 		<licenses>
 				<license>
 						<name>MIT License</name>
@@ -32,11 +32,15 @@
 				</developer>
 		</developers>
 		<scm>
-				<connection>scm:git:ssh://github.com/jenkinsci/zaproxy-plugin.git</connection>
+				<!-- <connection>scm:git:ssh://github.com/jenkinsci/zaproxy-plugin.git</connection>
 				<developerConnection>scm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>http://github.com/jenkinsci/zaproxy-plugin</url>
-  <tag>zaproxy-jenkins-1.0</tag>
-  </scm>
+				<tag>zaproxy-jenkins-1.0</tag>
+				-->
+				<connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
+				<developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
+				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
+		</scm>
 				
 		<repositories>
 				<repository>
