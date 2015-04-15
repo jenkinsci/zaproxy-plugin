@@ -15,7 +15,7 @@
 		<version>1.0.1-SNAPSHOT</version>
 		<packaging>hpi</packaging>
 
-		<name>ZAP Jenkins Plugin</name>
+		<name>ZAProxy Plugin</name>
 		<description>This plugin allow you to launch the security software ZAProxy via Jenkins.</description>
 		<url>https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin</url>
 		<licenses>
@@ -40,13 +40,22 @@
 				<connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
 				<developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
-		  <tag>HEAD</tag>
-  </scm>
+		<tag>HEAD</tag>
+</scm>
 				
 		<repositories>
 				<repository>
 						<id>repo.jenkins-ci.org</id>
 						<url>http://repo.jenkins-ci.org/public/</url>
+				</repository>
+				
+				<!-- TODO This repository is temporary in order to include org/zaproxy/clientapi/clientapi-2.8.jar 
+					This repository must be replace by an official OWASP repository that will contain this lib
+					when this repository will be created.
+				-->
+				<repository>
+						<id>store.novia-systems.fr</id>
+						<url>https://store.novia-systems.fr/libs-release</url>
 				</repository>
 		</repositories> 
 		<pluginRepositories>
