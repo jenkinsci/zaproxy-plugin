@@ -71,7 +71,7 @@ import java.util.List;
  */
 public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 
-	private static final String API_KEY = "ZAP-JENKINS-PLUGIN";
+	private static final String API_KEY = "ZAPROXY-PLUGIN";
 	public static final String ALL_REPORT_FORMAT = "all";
 	private static final int MILLISECONDS_IN_SECOND = 1000;
 	
@@ -525,13 +525,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 * |                  SCAN URL                            |
 		 * ======================================================= 
 		 */
-		if (scanURL) {
-			// If no session is loaded, do a spider before a scan
-			if(spiderURL == false && (filenameLoadSession == null || filenameLoadSession.length() == 0) ) {
-				listener.getLogger().println("No session load, so spider the site [" + targetURL + "]");
-				spiderURL(targetURL, listener);
-			}
-				
+		if (scanURL) {				
 			listener.getLogger().println("Scan the site [" + targetURL + "]");
 			scanURL(targetURL, listener);
 		} else {
