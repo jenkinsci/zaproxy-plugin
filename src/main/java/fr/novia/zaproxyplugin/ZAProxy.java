@@ -24,6 +24,8 @@
 
 package fr.novia.zaproxyplugin;
 
+import org.apache.commons.io.FilenameUtils;
+
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -702,7 +704,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 				throws IOException, ServletException {
 			if(filenameReports.isEmpty())
 				return FormValidation.error("Field is required");
-			if(filenameReports.contains("."))
+			//if(filenameReports.contains("."))
+			if(!FilenameUtils.getExtension(filenameReports).equals(""))
 				return FormValidation.warning("A file extension is not necessary.");
 			return FormValidation.ok();
 		}
@@ -731,7 +734,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 				return FormValidation.error("The saved session filename is the same of the loaded session filename.");
 			if(!filenameLoadSession.isEmpty())
 				return FormValidation.warning("A session is loaded, so it's not necessary to save session");
-			if(filenameSaveSession.contains("."))
+			
+			//if(filenameSaveSession.contains("."))
+			if(!FilenameUtils.getExtension(filenameSaveSession).equals(""))
 				return FormValidation.warning("A file extension is not necessary. A default file extension will be added (.session)");
 			return FormValidation.ok();
 		}
