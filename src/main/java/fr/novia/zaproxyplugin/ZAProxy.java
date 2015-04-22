@@ -645,9 +645,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	 * @throws InterruptedException 
 	 */
 	private void scanURL(final String url, BuildListener listener) throws ClientApiException, InterruptedException {
-		// Method signature : scan(String key, String url, boolean recurse, boolean inScopeOnly, String scanPolicyName)
+		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
-		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy);
+		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
 
 		// Wait for complete scanning (equal to 100)
 		// Method signature : status(String scanId)
