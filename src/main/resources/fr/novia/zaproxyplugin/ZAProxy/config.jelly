@@ -61,7 +61,19 @@ SOFTWARE.
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
+			<f:entry>
+				<table width="100%">					
+					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+						<f:textbox />
+					</f:entry>
+					
+					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+						<f:select />
+					</f:entry>
+				</table>
+			</f:entry>
+		</f:optionalBlock>		
 			
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
