@@ -24,8 +24,6 @@
 
 package fr.novia.zaproxyplugin;
 
-import org.parosproxy.paros.Constant;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
