@@ -80,6 +80,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	private static final String FILE_POLICY_EXTENSION = ".policy";
 	private static final String NAME_POLICIES_DIR_ZAP = "policies";
 	
+	//private static final String CMD_LINE_DIR = CommandLine.DIR;
+	private static final String CMD_LINE_DIR = "-dir";
+	
 	/** Host configured when ZAProxy is used as proxy */
 	private String zapProxyHost;
 	
@@ -404,9 +407,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		cmd.add("-host"); cmd.add(zapProxyHost);
 		cmd.add("-port"); cmd.add(String.valueOf(zapProxyPort));
 		
-		// Set the default directory used by ZAP if it's defined
-		if(!zapDefaultDir.equals("") && zapDefaultDir != null) {
-			cmd.add("-dir"); cmd.add(zapDefaultDir);
+		// Set the default directory used by ZAP if it's defined and if a scan is provided
+		if(scanURL && !zapDefaultDir.equals("") && zapDefaultDir != null) {
+			cmd.add(CMD_LINE_DIR); cmd.add(zapDefaultDir);
 		}
 		
 		addZapConfigList(cmd);
@@ -826,6 +829,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 */
 		public ListBoxModel doFillChosenPolicyItems(@QueryParameter String zapDefaultDir) {
 			ListBoxModel items = new ListBoxModel();
+			
+			//System.out.println("Constant.getZapHome() = " + Constant.getZapHome());
 			
 			File zapDir = new File(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
 			
