@@ -24,8 +24,6 @@
 
 package fr.novia.zaproxyplugin;
 
-import org.apache.commons.io.FilenameUtils;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -41,6 +39,7 @@ import hudson.tools.ToolInstallation;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.BuildException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -53,6 +52,7 @@ import javax.servlet.ServletException;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -62,6 +62,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -76,6 +77,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	private static final String API_KEY = "ZAPROXY-PLUGIN";
 	public static final String ALL_REPORT_FORMAT = "all";
 	private static final int MILLISECONDS_IN_SECOND = 1000;
+	private static final String FILE_POLICY_EXTENSION = ".policy";
+	private static final String NAME_POLICIES_DIR_ZAP = "policies";
+	
+	/** Host configured when ZAProxy is used as proxy */
+	private String zapProxyHost;
+	
+	/** Port configured when ZAProxy is used as proxy */
+	private int zapProxyPort;
+	
+	/** Allows to use the ZAProxy client API */
+	private ClientApi zapClientAPI;
+	
+	/** Path to the ZAProxy program */
+	private String zapProgram;
 	
 	/** Indicate if ZAProxy is automatically installed by Jenkins or if it is already install on the machine */
 	private final boolean autoInstall;
@@ -116,24 +131,25 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	/** Filename to save ZAProxy session. It can contain a relative path. */
 	private final String filenameSaveSession;
 	
-	/** Host configured when ZAProxy is used as proxy */
-	private String zapProxyHost;
+	/** The default directory that ZAP uses */
+	private final String zapDefaultDir;
 	
-	/** Port configured when ZAProxy is used as proxy */
-	private int zapProxyPort;
+	/** The file policy to use for the scan. It contains only the policy name (without extension) */
+	private final String chosenPolicy;
 	
-	/** Allows to use the ZAProxy client API */
-	private ClientApi zapClientAPI;
+	/** List of key=value pair (into one String) to override the configuration file */
+	private final List<ZAPconfig> configsZAP;
 	
-	/** Path to the ZAProxy program */
-	private String zapProgram;
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
 			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
 			boolean saveReports, String chosenFormat, String filenameReports,
-			boolean saveSession, String filenameSaveSession) {
+			boolean saveSession, String filenameSaveSession,
+			String zapDefaultDir, String chosenPolicy, 
+			List<ZAPconfig> configsZAP) {
+		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
 		this.zapHome = zapHome;
@@ -147,6 +163,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.filenameReports = filenameReports;
 		this.saveSession = saveSession;
 		this.filenameSaveSession = filenameSaveSession;
+		this.zapDefaultDir = zapDefaultDir;
+		this.chosenPolicy = chosenPolicy;
+		this.configsZAP = configsZAP != null ? new ArrayList<ZAPconfig>(configsZAP) : Collections.<ZAPconfig>emptyList();
 	}
 	
 	@Override
@@ -165,6 +184,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		s += "filenameReports ["+filenameReports+"]\n";
 		s += "saveSession ["+saveSession+"]\n";
 		s += "filenameSaveSession ["+filenameSaveSession+"]\n";
+		s += "zapDefaultDir ["+zapDefaultDir+"]\n";
+		s += "chosenPolicy ["+chosenPolicy+"]\n";
 		
 		s += "zapProxyHost ["+zapProxyHost+"]\n";
 		s += "zapProxyPort ["+zapProxyPort+"]\n";
@@ -235,12 +256,24 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		return filenameSaveSession;
 	}
 
+	public String getZapDefaultDir() {
+		return zapDefaultDir;
+	}
+	
+	public String getChosenPolicy() {
+		return chosenPolicy;
+	}
+
 	public void setZapProxyHost(String zapProxyHost) {
 		this.zapProxyHost = zapProxyHost;
 	}
 
 	public void setZapProxyPort(int zapProxyPort) {
 		this.zapProxyPort = zapProxyPort;
+	}
+	
+	public List<ZAPconfig> getConfigsZAP() {
+		return configsZAP;
 	}
 
 	/**
@@ -363,15 +396,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		File zapProgramFile = new File(zapProgram, getZAPProgramName(build));
 		
 		listener.getLogger().println("Start ZAProxy [" + zapProgramFile.getAbsolutePath() + "]");
-		/*listener.getLogger().println("Using working directory [" + pf.getParentFile().getPath() + "]");
-		listener.getLogger().println("pf.getAbsolutePath() [" + pf.getAbsolutePath() + "]");
-		listener.getLogger().println("pf.getCanonicalPath() [" + pf.getCanonicalPath() + "]");
-		listener.getLogger().println("build.getWorkspace().getRemote() = " + build.getWorkspace().absolutize().getRemote());*/
 		
 		// Command to start ZAProxy with parameters
-		String[] cmd = { zapProgramFile.getAbsolutePath(), "-daemon",
-				"-host", zapProxyHost,
-				"-port", String.valueOf(zapProxyPort) };
+		List<String> cmd = new ArrayList<String>();
+		cmd.add(zapProgramFile.getAbsolutePath()); 
+		cmd.add("-daemon");
+		cmd.add("-host"); cmd.add(zapProxyHost);
+		cmd.add("-port"); cmd.add(String.valueOf(zapProxyPort));
+		
+		// Set the default directory used by ZAP if it's defined
+		if(!zapDefaultDir.equals("") && zapDefaultDir != null) {
+			cmd.add("-dir"); cmd.add(zapDefaultDir);
+		}
+		
+		addZapConfigList(cmd);
 		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.directory(zapProgramFile.getParentFile());
@@ -384,6 +422,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		new Thread(errorFlux).start();
 		
 		waitForSuccessfulConnectionToZap(timeoutInSec, listener);
+	}
+	
+	/**
+	 * Add all overrided ZAP configs in the list in param.
+	 * @param l the list to attach ZAP configs
+	 */
+	private void addZapConfigList(List<String> l) {
+		
+		for(ZAPconfig zapConf : configsZAP) {
+			if(zapConf.isFilled()) {
+				l.add("-config");
+				l.add(zapConf.getKey() + "=" + zapConf.getValue());
+			}
+		}
 	}
 	
 	/**
@@ -507,7 +559,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			File sessionFile = new File(build.getWorkspace().getRemote(), filenameLoadSession);
 			listener.getLogger().println("Load session at ["+ sessionFile.getAbsolutePath() +"]");
 			zapClientAPI.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
-			//listener.getLogger().println("**********urls => " + zapClientAPI.core.urls().toString(2));
 		} else {
 			listener.getLogger().println("Skip loadSession");
 		}
@@ -597,12 +648,14 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	 * @throws InterruptedException 
 	 */
 	private void spiderURL(final String url, BuildListener listener) throws ClientApiException, InterruptedException {
-		zapClientAPI.spider.scan(API_KEY, url);
+		// Method signature : scan(String key, String url, String maxChildren)
+		zapClientAPI.spider.scan(API_KEY, url, "");
 
 		// Wait for complete spidering (equal to 100)
-		while (statusToInt(zapClientAPI.spider.status()) < 100) {
-			listener.getLogger().println("status spider = " + statusToInt(zapClientAPI.spider.status()));
-			listener.getLogger().println("Nb alertes url [] = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+		// Method signature : status(String scanId)
+		while (statusToInt(zapClientAPI.spider.status("")) < 100) {
+			listener.getLogger().println("status spider = " + statusToInt(zapClientAPI.spider.status("")));
+			listener.getLogger().println("Nb alertes = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			Thread.sleep(1000);
 		}
 	}
@@ -616,14 +669,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	 * @throws InterruptedException 
 	 */
 	private void scanURL(final String url, BuildListener listener) throws ClientApiException, InterruptedException {
-		// Method signature : scan(String key, String url, boolean recurse, boolean inScopeOnly)
-		zapClientAPI.ascan.scan(API_KEY, url, "true", "false");
+		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
+		// Use a default policy if chosenPolicy is null or empty
+		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
 
 		// Wait for complete scanning (equal to 100)
-		while (statusToInt(zapClientAPI.ascan.status()) < 100) {
-			listener.getLogger().println("status scan = " + statusToInt(zapClientAPI.ascan.status()));
-			listener.getLogger().println("Nb alertes url [] = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-			listener.getLogger().println("Nb msg url [] = " + zapClientAPI.core.numberOfMessages("").toString(2));
+		// Method signature : status(String scanId)
+		while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
+			listener.getLogger().println("status scan = " + statusToInt(zapClientAPI.ascan.status("")));
+			listener.getLogger().println("Nb alertes = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+			listener.getLogger().println("Nb msg url = " + zapClientAPI.core.numberOfMessages("").toString(2));
 			Thread.sleep(5000);
 		}
 	}
@@ -646,6 +701,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			listener.getLogger().println("No shutdown of ZAP (zapClientAPI==null)");
 		}
 	}
+	
 	
 	/**
 	 * Descriptor for {@link ZAProxy}. Used as a singleton.
@@ -704,7 +760,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 				throws IOException, ServletException {
 			if(filenameReports.isEmpty())
 				return FormValidation.error("Field is required");
-			//if(filenameReports.contains("."))
 			if(!FilenameUtils.getExtension(filenameReports).equals(""))
 				return FormValidation.warning("A file extension is not necessary.");
 			return FormValidation.ok();
@@ -734,8 +789,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 				return FormValidation.error("The saved session filename is the same of the loaded session filename.");
 			if(!filenameLoadSession.isEmpty())
 				return FormValidation.warning("A session is loaded, so it's not necessary to save session");
-			
-			//if(filenameSaveSession.contains("."))
 			if(!FilenameUtils.getExtension(filenameSaveSession).equals(""))
 				return FormValidation.warning("A file extension is not necessary. A default file extension will be added (.session)");
 			return FormValidation.ok();
@@ -761,6 +814,48 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			for (ToolDescriptor<?> desc : ToolInstallation.all()) {
 				for (ToolInstallation tool : desc.getInstallations()) {
 					items.add(tool.getName());
+				}
+			}
+			return items;
+		}
+		
+		/**
+		 * List model to choose the policy file to use by ZAproxy scan.
+		 * @param zapDefaultDir A string that represents an absolute path to the directory that ZAP uses.
+		 * @return a {@link ListBoxModel}. It can be empty if zapDefaultDir doesn't contain any policy file.
+		 */
+		public ListBoxModel doFillChosenPolicyItems(@QueryParameter String zapDefaultDir) {
+			ListBoxModel items = new ListBoxModel();
+			
+			File zapDir = new File(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
+			
+			if(zapDir.exists()) {				
+				// create new filename filter (get only file with FILE_POLICY_EXTENSION extension)
+				FilenameFilter policyFilter = new FilenameFilter() {
+
+					@Override
+					public boolean accept(File dir, String name) {
+						if (name.lastIndexOf('.') > 0) {
+							// get last index for '.' char
+							int lastIndex = name.lastIndexOf('.');
+
+							// get extension
+							String str = name.substring(lastIndex);
+
+							// match path name extension
+							if (str.equals(FILE_POLICY_EXTENSION)) {
+								return true;
+							}
+						}
+						return false;
+					}
+				};
+				// returns pathnames for files and directory
+				File[] listFiles = zapDir.listFiles(policyFilter);
+				
+				// Add policy files to the list, without their extension
+				for(int i = 0; i < listFiles.length; i++) {
+					items.add(FilenameUtils.getBaseName(listFiles[i].getName()));
 				}
 			}
 			return items;

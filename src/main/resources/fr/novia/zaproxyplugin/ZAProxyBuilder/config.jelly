@@ -30,7 +30,7 @@ SOFTWARE.
 	See global.jelly for a general discussion about jelly script.
 	-->
 	
-	<f:section title="${%Configuration}">
+	<f:section title="${%Admin configuration}">
 		<f:entry title="${%Workspace used}">
 			${it.workspace}
 		</f:entry>

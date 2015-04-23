@@ -49,6 +49,14 @@ SOFTWARE.
 		</f:entry>
 	</f:radioBlock>
 	
+	<f:advanced>
+		<f:section title="${%Override ZAProxy config}">
+			<f:block>
+				<f:repeatableProperty field="configsZAP" add="${%Add config}"/>
+			</f:block>
+		</f:section>
+	</f:advanced>
+	
 	<f:section title="${%Setup}">
 		<f:entry title="${%Load session}" field="filenameLoadSession">
 			<f:textbox />
@@ -61,7 +69,19 @@ SOFTWARE.
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
+			<f:entry>
+				<table width="100%">					
+					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+						<f:textbox />
+					</f:entry>
+					
+					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+						<f:select />
+					</f:entry>
+				</table>
+			</f:entry>
+		</f:optionalBlock>		
 			
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
@@ -85,6 +105,7 @@ SOFTWARE.
 				</table>	
 			</f:entry>
 		</f:optionalBlock>
+		
 	</f:section>
 	
 </j:jelly>
