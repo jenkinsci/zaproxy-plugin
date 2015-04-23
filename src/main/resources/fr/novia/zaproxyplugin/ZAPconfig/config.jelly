@@ -24,34 +24,30 @@ SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<!--
-	This jelly script is used for per-project configuration.
-
-	See global.jelly for a general discussion about jelly script.
-	-->
 	
-	<f:section title="${%Admin configuration}">
-		<f:entry title="${%Workspace used}">
-			${it.workspace}
-		</f:entry>
+	<f:entry help="/descriptor/fr.novia.zaproxyplugin.ZAPconfig/help/config">
+	<table width="100%">
+		<tr>
+			<th></th>
+			<th>KEY</th>
+			<th></th>
+			<th>VALUE</th>
+		</tr>
+		<tr>
+			<td align="center" style="vertical-align:middle">-config</td>
+			<td><f:textbox field="key"/></td>
+			<td align="center" style="vertical-align:middle">=</td>
+			<td><f:textbox field="value"/></td>
+		</tr>
+		<tr>
+			<td colspan="4" align="right"><f:repeatableDeleteButton value="${%Delete config}"/></td>
+		</tr>
+		<!--<div align="right">
+			<f:repeatableDeleteButton value="${%Delete config}"/>
+		</div>-->
+	</table>
+	</f:entry>
 		
-		<f:entry title="${%ZAProxy host}">
-			${descriptor.zapProxyHost} (${%Configured in admin mode})
-		</f:entry>
-		
-		<f:entry title="${%ZAProxy port}">
-			${descriptor.zapProxyPort} (${%Configured in admin mode})
-		</f:entry>
-	</f:section>
-		
-	<f:section title="${%Startup}" />
-		<f:optionalBlock title="${%Start ZAProxy in a pre-build step}" field="startZAPFirst" inline="true" />
-		
-		<!-- Load the config.jelly bind to ZAProxy class 
-		This code doesn't work : <st:include page="config.jelly" class="fr.novia.zaproxyplugin.ZAProxy"/>
-		It doesn't create an ZAProxy instance.	So, I use f:property	
-		-->
-		<f:property field="zaproxy" />
-		
-		
+	
+	
 </j:jelly>

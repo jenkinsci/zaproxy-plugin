@@ -49,6 +49,14 @@ SOFTWARE.
 		</f:entry>
 	</f:radioBlock>
 	
+	<f:advanced>
+		<f:section title="${%Override ZAProxy config}">
+			<f:block>
+				<f:repeatableProperty field="configsZAP" add="${%Add config}"/>
+			</f:block>
+		</f:section>
+	</f:advanced>
+	
 	<f:section title="${%Setup}">
 		<f:entry title="${%Load session}" field="filenameLoadSession">
 			<f:textbox />
@@ -97,6 +105,7 @@ SOFTWARE.
 				</table>	
 			</f:entry>
 		</f:optionalBlock>
+		
 	</f:section>
 	
 </j:jelly>

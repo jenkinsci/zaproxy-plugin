@@ -62,6 +62,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -136,6 +137,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	/** The file policy to use for the scan. It contains only the policy name (without extension) */
 	private final String chosenPolicy;
 	
+	/** List of key=value pair (into one String) to override the configuration file */
+	private final List<ZAPconfig> configsZAP;
+	
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
@@ -143,10 +147,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
 			boolean saveReports, String chosenFormat, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
-			String zapDefaultDir, String chosenPolicy) {
+			String zapDefaultDir, String chosenPolicy, 
+			List<ZAPconfig> configsZAP) {
 		
-		
-
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
 		this.zapHome = zapHome;
@@ -162,6 +165,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.filenameSaveSession = filenameSaveSession;
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
+		this.configsZAP = configsZAP != null ? new ArrayList<ZAPconfig>(configsZAP) : Collections.<ZAPconfig>emptyList();
 	}
 	
 	@Override
@@ -266,6 +270,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 
 	public void setZapProxyPort(int zapProxyPort) {
 		this.zapProxyPort = zapProxyPort;
+	}
+	
+	public List<ZAPconfig> getConfigsZAP() {
+		return configsZAP;
 	}
 
 	/**
@@ -401,6 +409,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			cmd.add("-dir"); cmd.add(zapDefaultDir);
 		}
 		
+		addZapConfigList(cmd);
+		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.directory(zapProgramFile.getParentFile());
 		
@@ -412,6 +422,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		new Thread(errorFlux).start();
 		
 		waitForSuccessfulConnectionToZap(timeoutInSec, listener);
+	}
+	
+	/**
+	 * Add all overrided ZAP configs in the list in param.
+	 * @param l the list to attach ZAP configs
+	 */
+	private void addZapConfigList(List<String> l) {
+		
+		for(ZAPconfig zapConf : configsZAP) {
+			if(zapConf.isFilled()) {
+				l.add("-config");
+				l.add(zapConf.getKey() + "=" + zapConf.getValue());
+			}
+		}
 	}
 	
 	/**
@@ -834,7 +858,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 					items.add(FilenameUtils.getBaseName(listFiles[i].getName()));
 				}
 			}
-			
 			return items;
 		}
 	}
