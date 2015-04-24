@@ -24,50 +24,44 @@
 
 package fr.novia.zaproxyplugin;
 
-import hudson.model.BuildListener;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
- * This class allows to display output (standard, error, ...)
- * of an external application through a Thread.
+ * This object allows to add a ZAP command line option.
+ * 
+ * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline">
+ * 		https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
  * 
  * @author ludovic.roucoux
  *
  */
-public class FluxDisplay implements Runnable {
-	
-	private final InputStream inputStream;
-	private final BuildListener listener;
-	
-	public FluxDisplay(InputStream is, BuildListener listener) {
-		this.inputStream = is;
-		this.listener = listener;
-	}
-	
-	private BufferedReader getBufferedReader(InputStream is) {
-		return new BufferedReader(new InputStreamReader(is));
+public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine>{
+	private final String cmdLineOption;
+	private final String cmdLineValue;
+
+	@DataBoundConstructor 
+	public ZAPcmdLine(String cmdLineOption, String cmdLineValue) {
+		this.cmdLineOption = cmdLineOption;
+		this.cmdLineValue = cmdLineValue;
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
-	@Override
-	public void run() {
-		try {
-			BufferedReader br = getBufferedReader(inputStream);
-			String line = "";
-			try {
-				while ((line = br.readLine()) != null) {
-					listener.getLogger().println(line);
-				}
-			} finally {
-				br.close();
-			}
-		} catch (final Exception e) {
-			e.printStackTrace();
+	public String getCmdLineOption() {
+		return cmdLineOption;
+	}
+
+	public String getCmdLineValue() {
+		return cmdLineValue;
+	}
+	
+	@Extension 
+	public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPcmdLine> {
+		@Override 
+		public String getDisplayName() {
+			return "ZAP command Line";
 		}
 	}
+
 }

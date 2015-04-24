@@ -43,6 +43,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.BuildException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.parosproxy.paros.CommandLine;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
@@ -75,13 +76,24 @@ import java.util.List;
 public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 
 	private static final String API_KEY = "ZAPROXY-PLUGIN";
-	public static final String ALL_REPORT_FORMAT = "all";
+	
 	private static final int MILLISECONDS_IN_SECOND = 1000;
 	private static final String FILE_POLICY_EXTENSION = ".policy";
 	private static final String NAME_POLICIES_DIR_ZAP = "policies";
 	
-	//private static final String CMD_LINE_DIR = CommandLine.DIR;
-	private static final String CMD_LINE_DIR = "-dir";
+	public static final String CMD_LINE_DIR = CommandLine.DIR;
+	public static final String CMD_LINE_CONFIG = CommandLine.CONFIG;
+	public static final String CMD_LINE_HOST = CommandLine.HOST;
+	public static final String CMD_LINE_PORT = CommandLine.PORT;
+	public static final String CMD_LINE_DAEMON = CommandLine.DAEMON;
+	
+	private static final String ZAP_PROG_NAME_BAT = "zap.bat";
+	private static final String ZAP_PROG_NAME_SH = "zap.sh";
+	
+	private static final String REPORT_FORMAT_ALL = "all";
+	private static final String REPORT_FORMAT_XML = "xml";
+	private static final String REPORT_FORMAT_JSON = "json";
+	private static final String REPORT_FORMAT_HTML = "html";
 	
 	/** Host configured when ZAProxy is used as proxy */
 	private String zapProxyHost;
@@ -140,8 +152,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	/** The file policy to use for the scan. It contains only the policy name (without extension) */
 	private final String chosenPolicy;
 	
-	/** List of key=value pair (into one String) to override the configuration file */
-	private final List<ZAPconfig> configsZAP;
+	/**  */
+	private final List<ZAPcmdLine> cmdLinesZAP;
 	
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
@@ -150,8 +162,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
 			boolean saveReports, String chosenFormat, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
-			String zapDefaultDir, String chosenPolicy, 
-			List<ZAPconfig> configsZAP) {
+			String zapDefaultDir, String chosenPolicy,
+			List<ZAPcmdLine> cmdLinesZAP) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -168,7 +180,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.filenameSaveSession = filenameSaveSession;
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
-		this.configsZAP = configsZAP != null ? new ArrayList<ZAPconfig>(configsZAP) : Collections.<ZAPconfig>emptyList();
+		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : Collections.<ZAPcmdLine>emptyList();
 	}
 	
 	@Override
@@ -275,8 +287,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.zapProxyPort = zapProxyPort;
 	}
 	
-	public List<ZAPconfig> getConfigsZAP() {
-		return configsZAP;
+	public List<ZAPcmdLine> getCmdLinesZAP() {
+		return cmdLinesZAP;
 	}
 
 	/**
@@ -338,16 +350,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		// Append zap program following Master/Slave and Windows/Unix
 		if( node.getNodeName().equals("")) { // Master
 			if( File.pathSeparatorChar == ':' ) { // UNIX
-				zapProgramName = "zap.sh";
+				zapProgramName = ZAP_PROG_NAME_SH;
 			} else { // Windows (pathSeparatorChar == ';')
-				zapProgramName = "zap.bat";
+				zapProgramName = ZAP_PROG_NAME_BAT;
 			}
 		} 
 		else { // Slave
 			if( ((SlaveComputer)node.toComputer()).getOSDescription().equals("Unix") ) {
-				zapProgramName = "zap.sh";
+				zapProgramName = ZAP_PROG_NAME_SH;
 			} else {
-				zapProgramName = "zap.bat";
+				zapProgramName = ZAP_PROG_NAME_BAT;
 			}
 		}
 		return zapProgramName;
@@ -403,16 +415,18 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		// Command to start ZAProxy with parameters
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapProgramFile.getAbsolutePath()); 
-		cmd.add("-daemon");
-		cmd.add("-host"); cmd.add(zapProxyHost);
-		cmd.add("-port"); cmd.add(String.valueOf(zapProxyPort));
+		cmd.add(CMD_LINE_DAEMON);
+		cmd.add(CMD_LINE_HOST); cmd.add(zapProxyHost);
+		cmd.add(CMD_LINE_PORT); cmd.add(String.valueOf(zapProxyPort));
 		
 		// Set the default directory used by ZAP if it's defined and if a scan is provided
 		if(scanURL && !zapDefaultDir.equals("") && zapDefaultDir != null) {
 			cmd.add(CMD_LINE_DIR); cmd.add(zapDefaultDir);
 		}
 		
-		addZapConfigList(cmd);
+		if(!cmdLinesZAP.isEmpty()) {
+			addZapCmdLine(cmd);
+		}
 		
 		ProcessBuilder pb = new ProcessBuilder(cmd);
 		pb.directory(zapProgramFile.getParentFile());
@@ -428,15 +442,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	}
 	
 	/**
-	 * Add all overrided ZAP configs in the list in param.
-	 * @param l the list to attach ZAP configs
+	 * Add list of command line in the list in param
+	 * @param l the list to attach ZAP command line
 	 */
-	private void addZapConfigList(List<String> l) {
+	private void addZapCmdLine(List<String> l) {
 		
-		for(ZAPconfig zapConf : configsZAP) {
-			if(zapConf.isFilled()) {
-				l.add("-config");
-				l.add(zapConf.getKey() + "=" + zapConf.getValue());
+		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
+			if(!zapCmd.getCmdLineOption().isEmpty() && zapCmd.getCmdLineOption() != null) {
+				l.add(zapCmd.getCmdLineOption());
+			}
+			if(!zapCmd.getCmdLineValue().isEmpty() && zapCmd.getCmdLineValue() != null) {
+				l.add(zapCmd.getCmdLineValue());
 			}
 		}
 	}
@@ -593,12 +609,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 * ======================================================= 
 		 */
 		if (saveReports) {
-			if(chosenFormat.equalsIgnoreCase(ZAProxy.ALL_REPORT_FORMAT)) {
+			if(chosenFormat.equalsIgnoreCase(ZAProxy.REPORT_FORMAT_ALL)) {
 				listener.getLogger().println("Generate reports in all formats");
 				
 				// Loop of all available formats ("all" format included)
 				for(String format : getDescriptor().getFormatList()) {
-					if(!format.equals(ZAProxy.ALL_REPORT_FORMAT)) {
+					if(!format.equals(ZAProxy.REPORT_FORMAT_ALL)) {
 						saveReport(format, listener, build);
 					}
 				}
@@ -731,10 +747,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 */
 		public ZAProxyDescriptorImpl() {
 			formatList = new ArrayList<String>();
-			formatList.add("xml");		
-			formatList.add("json");		
-			formatList.add("html");		
-			formatList.add(ZAProxy.ALL_REPORT_FORMAT);
+			formatList.add(REPORT_FORMAT_XML);		
+			formatList.add(REPORT_FORMAT_JSON);		
+			formatList.add(REPORT_FORMAT_HTML);
+			formatList.add(REPORT_FORMAT_ALL);
 			load();
 		}
 		
@@ -829,8 +845,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 */
 		public ListBoxModel doFillChosenPolicyItems(@QueryParameter String zapDefaultDir) {
 			ListBoxModel items = new ListBoxModel();
-			
-			//System.out.println("Constant.getZapHome() = " + Constant.getZapHome());
 			
 			File zapDir = new File(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
 			

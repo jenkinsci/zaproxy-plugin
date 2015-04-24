@@ -50,9 +50,9 @@ SOFTWARE.
 	</f:radioBlock>
 	
 	<f:advanced>
-		<f:section title="${%Override ZAProxy config}">
+		<f:section title="${%Add ZAProxy command line option}">
 			<f:block>
-				<f:repeatableProperty field="configsZAP" add="${%Add config}"/>
+				<f:repeatableProperty field="cmdLinesZAP" add="${%Add command line option}"/>
 			</f:block>
 		</f:section>
 	</f:advanced>
