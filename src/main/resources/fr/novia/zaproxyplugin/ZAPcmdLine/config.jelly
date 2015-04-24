@@ -26,22 +26,19 @@ SOFTWARE.
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 	
 	<f:entry help="/descriptor/fr.novia.zaproxyplugin.ZAPcmdLine/help/config">
-	<table width="100%">
-		<tr>
-			<th>${%Command line option}</th>
-			<th>${%Command line value}</th>
-		</tr>
-		<tr>
-			<td><f:textbox field="cmdLineOption"/></td>
-			<td><f:textbox field="cmdLineValue"/></td>
-		</tr>
-		<tr>
-			<td colspan="2" align="right"><f:repeatableDeleteButton value="${%Delete command line}"/></td>
-		</tr>
-		<!--<div align="right">
-			<f:repeatableDeleteButton value="${%Delete command line}"/>
-		</div>-->
-	</table>
+		<table width="100%">
+			<tr>
+				<th>${%Command line option}</th>
+				<th>${%Command line value}</th>
+			</tr>
+			<tr>
+				<td><f:textbox field="cmdLineOption"/></td>
+				<td><f:textbox field="cmdLineValue"/></td>
+			</tr>
+			<tr>
+				<td colspan="2" align="right"><f:repeatableDeleteButton value="${%Delete command line}"/></td>
+			</tr>
+		</table>
 	</f:entry>
 		
 	

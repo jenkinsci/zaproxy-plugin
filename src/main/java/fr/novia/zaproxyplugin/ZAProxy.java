@@ -152,9 +152,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	/** The file policy to use for the scan. It contains only the policy name (without extension) */
 	private final String chosenPolicy;
 	
-	/**  */
+	/** List of all ZAP command lines specified by the user */
 	private final List<ZAPcmdLine> cmdLinesZAP;
-	
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
