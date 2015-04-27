@@ -43,7 +43,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.tools.ant.BuildException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.parosproxy.paros.CommandLine;
+//import org.parosproxy.paros.CommandLine;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
@@ -81,11 +81,18 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	private static final String FILE_POLICY_EXTENSION = ".policy";
 	private static final String NAME_POLICIES_DIR_ZAP = "policies";
 	
-	public static final String CMD_LINE_DIR = CommandLine.DIR;
-	public static final String CMD_LINE_CONFIG = CommandLine.CONFIG;
-	public static final String CMD_LINE_HOST = CommandLine.HOST;
-	public static final String CMD_LINE_PORT = CommandLine.PORT;
-	public static final String CMD_LINE_DAEMON = CommandLine.DAEMON;
+	public static final String CMD_LINE_DIR = "-dir";
+	public static final String CMD_LINE_CONFIG = "-config";
+	public static final String CMD_LINE_HOST = "-host";
+	public static final String CMD_LINE_PORT = "-port";
+	public static final String CMD_LINE_DAEMON = "-daemon";
+	
+	// TODO Do import when zap-2.4.0.jar will contain the correct API version
+//	public static final String CMD_LINE_DIR = CommandLine.DIR;
+//	public static final String CMD_LINE_CONFIG = CommandLine.CONFIG;
+//	public static final String CMD_LINE_HOST = CommandLine.HOST;
+//	public static final String CMD_LINE_PORT = CommandLine.PORT;
+//	public static final String CMD_LINE_DAEMON = CommandLine.DAEMON;
 	
 	private static final String ZAP_PROG_NAME_BAT = "zap.bat";
 	private static final String ZAP_PROG_NAME_SH = "zap.sh";
@@ -180,6 +187,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : Collections.<ZAPcmdLine>emptyList();
+		System.out.println(toString());
 	}
 	
 	@Override
