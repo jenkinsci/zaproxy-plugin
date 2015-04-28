@@ -58,8 +58,13 @@ SOFTWARE.
 	</f:advanced>
 	
 	<f:section title="${%Setup}">
+		<f:invisibleEntry field="workspace" >
+			<f:textbox name="workspace" value="${it.workspace}"/>
+		</f:invisibleEntry>
+	
 		<f:entry title="${%Load session}" field="filenameLoadSession">
-			<f:textbox />
+			<!--<f:textbox />-->
+			<f:select />
 		</f:entry>	
 	
 		<f:entry title="${%Target URL}" field="targetURL">

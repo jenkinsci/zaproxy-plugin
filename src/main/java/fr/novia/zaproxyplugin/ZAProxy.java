@@ -24,6 +24,8 @@
 
 package fr.novia.zaproxyplugin;
 
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -63,6 +65,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -79,6 +82,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	
 	private static final int MILLISECONDS_IN_SECOND = 1000;
 	private static final String FILE_POLICY_EXTENSION = ".policy";
+	private static final String FILE_SESSION_EXTENSION = ".session";
 	private static final String NAME_POLICIES_DIR_ZAP = "policies";
 	
 	public static final String CMD_LINE_DIR = "-dir";
@@ -811,7 +815,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		public FormValidation doCheckFilenameSaveSession(@QueryParameter("filenameLoadSession") final String filenameLoadSession,
 				@QueryParameter("filenameSaveSession") final String filenameSaveSession)
 				throws IOException, ServletException {
-			if(filenameSaveSession.equals(filenameLoadSession))
+			if(!filenameLoadSession.isEmpty() && filenameSaveSession.equals(filenameLoadSession))
 				return FormValidation.error("The saved session filename is the same of the loaded session filename.");
 			if(!filenameLoadSession.isEmpty())
 				return FormValidation.warning("A session is loaded, so it's not necessary to save session");
@@ -846,7 +850,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		}
 		
 		/**
-		 * List model to choose the policy file to use by ZAproxy scan.
+		 * List model to choose the policy file to use by ZAProxy scan.
 		 * @param zapDefaultDir A string that represents an absolute path to the directory that ZAP uses.
 		 * @return a {@link ListBoxModel}. It can be empty if zapDefaultDir doesn't contain any policy file.
 		 */
@@ -884,6 +888,32 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 					items.add(FilenameUtils.getBaseName(listFiles[i].getName()));
 				}
 			}
+			
+			return items;
+		}
+		
+		/**
+		 * List model to choose the ZAP session to use.
+		 * @param workspace the location to load ZAP sessions (the workspace of the current job)
+		 * @return a {@link ListBoxModel}. It can be empty if the workspace doesn't contain any ZAP sessions.
+		 */
+		public ListBoxModel doFillFilenameLoadSessionItems(@QueryParameter String workspace) {
+			ListBoxModel items = new ListBoxModel();
+			
+			System.out.println("workspace = " + workspace);
+
+			File dir = new File(workspace);
+
+			Collection<File> colFiles = FileUtils.listFiles(dir,
+					FileFilterUtils.suffixFileFilter(FILE_SESSION_EXTENSION),
+					TrueFileFilter.INSTANCE);
+			
+			items.add(""); // To not load a session, add a blank choice
+			
+			for (File f : colFiles) {
+				items.add(f.getAbsolutePath().replace(dir.getAbsolutePath() + File.separatorChar, ""));
+			}
+
 			return items;
 		}
 	}
