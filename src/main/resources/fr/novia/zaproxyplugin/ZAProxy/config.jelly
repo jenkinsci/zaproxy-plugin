@@ -91,8 +91,20 @@ SOFTWARE.
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
 				<table width="100%">
-					<f:entry title="${%Choose format report}" field="chosenFormat">
-						<f:select />
+					<f:entry title="${%Choose format report}" field="chosenFormats">
+						<select name="chosenFormats" multiple="multiple" size="${descriptor.getAllFormats().size()}"
+						class="setting-input select" >
+							<j:forEach var="aFormat" items="${descriptor.getAllFormats()}" >
+								<j:choose>
+								<j:when test="${instance.chosenFormats.contains(aFormat)}">
+									<option value="${aFormat}" selected="selected">${aFormat}</option>
+								</j:when>
+								<j:otherwise>
+									<option value="${aFormat}">${aFormat}</option>
+								</j:otherwise>
+								</j:choose>
+							</j:forEach>
+						</select>
 					</f:entry>
 					<f:entry title="${%Filename for report}" field="filenameReports">
 						<f:textbox clazz="required" />

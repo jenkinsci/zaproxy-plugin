@@ -24,8 +24,9 @@
 
 package fr.novia.zaproxyplugin;
 
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.io.filefilter.FileFilterUtils;
+import fr.novia.zaproxyplugin.report.ZAPreport;
+import fr.novia.zaproxyplugin.report.ZAPreportHTML;
+import fr.novia.zaproxyplugin.report.ZAPreportXML;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -42,6 +43,8 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.tools.ant.BuildException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -67,7 +70,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains methods to start and execute ZAProxy.
@@ -100,11 +105,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	
 	private static final String ZAP_PROG_NAME_BAT = "zap.bat";
 	private static final String ZAP_PROG_NAME_SH = "zap.sh";
-	
-	private static final String REPORT_FORMAT_ALL = "all";
-	private static final String REPORT_FORMAT_XML = "xml";
-	private static final String REPORT_FORMAT_JSON = "json";
-	private static final String REPORT_FORMAT_HTML = "html";
 	
 	/** Host configured when ZAProxy is used as proxy */
 	private String zapProxyHost;
@@ -145,8 +145,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	/** Save reports or not */
 	private final boolean saveReports;
 
-	/** Chosen format for reports */
-	private final String chosenFormat;
+	/** List of chosen format for reports */
+	private final List<String> chosenFormats;
 	
 	/** Filename for ZAProxy reports. It can contain a relative path. */
 	private final String filenameReports;
@@ -170,7 +170,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
 			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
-			boolean saveReports, String chosenFormat, String filenameReports,
+			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP) {
@@ -184,7 +184,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		this.spiderURL = spiderURL;
 		this.scanURL = scanURL;
 		this.saveReports = saveReports;
-		this.chosenFormat = chosenFormat;
+		this.chosenFormats = chosenFormats != null ? new ArrayList<String>(chosenFormats) : new ArrayList<String>();
+		System.out.println("chosenFormats = " + chosenFormats);
 		this.filenameReports = filenameReports;
 		this.saveSession = saveSession;
 		this.filenameSaveSession = filenameSaveSession;
@@ -206,7 +207,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		s += "spiderURL ["+spiderURL+"]\n";
 		s += "scanURL ["+scanURL+"]\n";
 		s += "saveReports ["+saveReports+"]\n";
-		s += "chosenFormat ["+chosenFormat+"]\n";
+		s += "chosenFormats ["+chosenFormats+"]\n";
 		s += "filenameReports ["+filenameReports+"]\n";
 		s += "saveSession ["+saveSession+"]\n";
 		s += "filenameSaveSession ["+filenameSaveSession+"]\n";
@@ -266,8 +267,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		return saveReports;
 	}
 
-	public String getChosenFormat() {
-		return chosenFormat;
+	public List<String> getChosenFormats() {
+		return chosenFormats;
 	}
 
 	public String getFilenameReports() {
@@ -457,7 +458,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	 * @param l the list to attach ZAP command line
 	 */
 	private void addZapCmdLine(List<String> l) {
-		
 		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
 			if(!zapCmd.getCmdLineOption().isEmpty() && zapCmd.getCmdLineOption() != null) {
 				l.add(zapCmd.getCmdLineOption());
@@ -558,16 +558,18 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	}
 	
 	/**
-	 * Save security alerts into a file
-	 * @param format the report format (xml, html or json)
+	 * Generates security report for one format.
+	 * @param reportFormat the format of the report
 	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param build
+	 * @param clientApi the ZAP client API to call method
 	 * @throws Exception
 	 */
-	private void saveReport(final String format, BuildListener listener, AbstractBuild<?, ?> build) throws Exception {
-		final String alerts = getAllAlerts(format, listener);
-		final String fullFileName = filenameReports + "." + format;
+	private void saveReport(ZAPreport reportFormat, BuildListener listener, AbstractBuild<?, ?> build, 
+			ClientApi clientApi) throws Exception {
+		final String fullFileName = filenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(build.getWorkspace().getRemote(), fullFileName);
-		FileUtils.writeStringToFile(reportsFile, alerts);
+		FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
 		listener.getLogger().println("File ["+ reportsFile.getAbsolutePath() +"] saved");
 	}
 
@@ -619,18 +621,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 * |                  SAVE REPORTS                        |
 		 * ======================================================= 
 		 */
-		if (saveReports) {
-			if(chosenFormat.equalsIgnoreCase(ZAProxy.REPORT_FORMAT_ALL)) {
-				listener.getLogger().println("Generate reports in all formats");
-				
-				// Loop of all available formats ("all" format included)
-				for(String format : getDescriptor().getFormatList()) {
-					if(!format.equals(ZAProxy.REPORT_FORMAT_ALL)) {
-						saveReport(format, listener, build);
-					}
-				}
-			} else {
-				saveReport(chosenFormat, listener, build);
+		if (saveReports) {			
+			// Generates reports for all formats selected
+			for(String format : chosenFormats) {
+				ZAPreport report = getDescriptor().getMapFormatReport().get(format);
+				saveReport(report, listener, build, zapClientAPI);
 			}
 		}
 		
@@ -655,8 +650,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			listener.getLogger().println("Skip saveSession");
 		}
 		
-		listener.getLogger().println("Nb alertes = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-		listener.getLogger().println("Nb msg = " + zapClientAPI.core.numberOfMessages("").toString(2));
+		listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+		listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
 	}
 	
 	/**
@@ -684,8 +679,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
 		while (statusToInt(zapClientAPI.spider.status("")) < 100) {
-			listener.getLogger().println("status spider = " + statusToInt(zapClientAPI.spider.status("")));
-			listener.getLogger().println("Nb alertes = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+			listener.getLogger().println("Status spider = " + statusToInt(zapClientAPI.spider.status("")) + "%");
+			listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			Thread.sleep(1000);
 		}
 	}
@@ -699,6 +694,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 	 * @throws InterruptedException 
 	 */
 	private void scanURL(final String url, BuildListener listener) throws ClientApiException, InterruptedException {
+		if(chosenPolicy == null && chosenPolicy.equals("")) {
+			listener.getLogger().println("Scan url [" + url + "] with the policy by default");		
+		} else {
+			listener.getLogger().println("Scan url [" + url + "] with the following policy ["
+							+ chosenPolicy + "]");
+		}
+		
 		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
 		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
@@ -706,9 +708,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		// Wait for complete scanning (equal to 100)
 		// Method signature : status(String scanId)
 		while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
-			listener.getLogger().println("status scan = " + statusToInt(zapClientAPI.ascan.status("")));
-			listener.getLogger().println("Nb alertes = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-			listener.getLogger().println("Nb msg url = " + zapClientAPI.core.numberOfMessages("").toString(2));
+			listener.getLogger().println("Status scan = " + statusToInt(zapClientAPI.ascan.status("")) + "%");
+			listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+			listener.getLogger().println("Messages number = " + zapClientAPI.core.numberOfMessages("").toString(2));
 			Thread.sleep(5000);
 		}
 	}
@@ -750,18 +752,23 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 * <p>
 		 * If you don't want fields to be persisted, use <tt>transient</tt>.
 		 */
-		private List<String> formatList;
+		private Map<String, ZAPreport> mapFormatReport;
 		
 		/**
 		 * In order to load the persisted global configuration, you have to
 		 * call load() in the constructor.
 		 */
 		public ZAProxyDescriptorImpl() {
-			formatList = new ArrayList<String>();
-			formatList.add(REPORT_FORMAT_XML);		
-			formatList.add(REPORT_FORMAT_JSON);		
-			formatList.add(REPORT_FORMAT_HTML);
-			formatList.add(REPORT_FORMAT_ALL);
+			mapFormatReport = new HashMap<String, ZAPreport>();
+			
+			// ZAPreport's creation
+			ZAPreportXML reportXML = new ZAPreportXML();
+			ZAPreportHTML reportHTML = new ZAPreportHTML();
+			
+			// Add ZAPreport to the map
+			mapFormatReport.put(reportXML.getFormat(), reportXML);
+			mapFormatReport.put(reportHTML.getFormat(), reportHTML);
+			
 			load();
 		}
 		
@@ -770,8 +777,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 			return null; 
 		}
 
-		public List<String> getFormatList() {
-			return formatList;
+		public Map<String, ZAPreport> getMapFormatReport() {
+			return mapFormatReport;
+		}
+		
+		public List<String> getAllFormats() {
+			return new ArrayList<String>(mapFormatReport.keySet());
 		}
 		
 		/**
@@ -828,10 +839,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 * List model to choose the alert report format
 		 * @return a {@link ListBoxModel}
 		 */
-		public ListBoxModel doFillChosenFormatItems() {
+		public ListBoxModel doFillChosenFormatsItems() {
 			ListBoxModel items = new ListBoxModel();
-			for(String format: formatList)
+			for(String format: mapFormatReport.keySet()) {
 				items.add(format);
+			}
 			return items;
 		}
 		
@@ -841,7 +853,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 */
 		public ListBoxModel doFillToolUsedItems() {
 			ListBoxModel items = new ListBoxModel();
-			for (ToolDescriptor<?> desc : ToolInstallation.all()) {
+			for(ToolDescriptor<?> desc : ToolInstallation.all()) {
 				for (ToolInstallation tool : desc.getInstallations()) {
 					items.add(tool.getName());
 				}
@@ -883,6 +895,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 				// returns pathnames for files and directory
 				File[] listFiles = zapDir.listFiles(policyFilter);
 				
+				items.add(""); // To not load a policy file, add a blank choice
+				
 				// Add policy files to the list, without their extension
 				for(int i = 0; i < listFiles.length; i++) {
 					items.add(FilenameUtils.getBaseName(listFiles[i].getName()));
@@ -899,8 +913,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> {
 		 */
 		public ListBoxModel doFillFilenameLoadSessionItems(@QueryParameter String workspace) {
 			ListBoxModel items = new ListBoxModel();
-			
-			System.out.println("workspace = " + workspace);
 
 			File dir = new File(workspace);
 
