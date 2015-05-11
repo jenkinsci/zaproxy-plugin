@@ -42,7 +42,7 @@ SOFTWARE.
 		</f:entry>
 
 		<f:entry title="${%ZAProxy Port}" field="zapProxyPort">
-			<f:number default="8080" clazz="required positive-number" />
+			<f:number default="8090" clazz="required positive-number" />
 		</f:entry>
 	</f:section>
 </j:jelly>

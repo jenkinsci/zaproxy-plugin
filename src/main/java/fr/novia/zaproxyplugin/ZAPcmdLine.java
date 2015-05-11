@@ -29,6 +29,8 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
+
 /**
  * This object allows to add a ZAP command line option.
  * 
@@ -38,8 +40,13 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author ludovic.roucoux
  *
  */
-public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine>{
+public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine> implements Serializable {
+	private static final long serialVersionUID = -695679474175608775L;
+
+	/** Configuration key for the command line */
 	private final String cmdLineOption;
+	
+	/** Configuration value for the command line */
 	private final String cmdLineValue;
 
 	@DataBoundConstructor 

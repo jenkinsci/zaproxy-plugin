@@ -24,8 +24,19 @@
 
 package fr.novia.zaproxyplugin;
 
+import hudson.FilePath;
+import hudson.FilePath.FileCallable;
+import hudson.remoting.VirtualChannel;
+import org.jenkinsci.remoting.RoleChecker;
+
+import java.io.File;
+
+import hudson.model.Node;
+import hudson.slaves.SlaveComputer;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Launcher.LocalLauncher;
+import hudson.Launcher.RemoteLauncher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -87,20 +98,35 @@ public class ZAProxyBuilder extends Builder {
 	
 	// Method called before launching the build
 	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
-		listener.getLogger().println("------- START Prebuild -------");
 		
-		listener.getLogger().println("Start ZAProxy in prebuild = " + startZAPFirst);
-		if(startZAPFirst) {	
+		if(startZAPFirst) {
+			listener.getLogger().println("------- START Prebuild -------");
+			
 			try {
-				zaproxy.startZAP(build, listener);
+				Launcher launcher = null;
+				Node node = build.getBuiltOn();
+				
+				// Create launcher according to the build's location (Master or Slave) and the build's OS
+				
+				if(node.getNodeName().equals("")) { // Build on master 
+					launcher = new LocalLauncher(listener, build.getWorkspace().getChannel());
+				} else { // Build on slave
+					boolean isUnix;
+					if( ((SlaveComputer)node.toComputer()).getOSDescription().equals("Unix") ) {
+						isUnix = true;
+					} else {
+						isUnix = false;
+					}
+					launcher = new RemoteLauncher(listener, build.getWorkspace().getChannel(), isUnix);
+				}		
+				zaproxy.startZAP(build, listener, launcher);
 			} catch (Exception e) {
 				e.printStackTrace();
 				listener.error(e.toString());
 				return false;
 			}
+			listener.getLogger().println("------- END Prebuild -------");
 		}
-		
-		listener.getLogger().println("------- END Prebuild -------");
 		return true;
 	}
 
@@ -112,7 +138,7 @@ public class ZAProxyBuilder extends Builder {
 		
 		if(!startZAPFirst) {
 			try {
-				zaproxy.startZAP(build, listener);
+				zaproxy.startZAP(build, listener, launcher);
 			} catch (Exception e) {
 				e.printStackTrace();
 				listener.error(e.toString());
@@ -120,17 +146,15 @@ public class ZAProxyBuilder extends Builder {
 			}
 		}
 		
+		boolean res;
 		try {
-			zaproxy.executeZAP(build, listener);
+			res = build.getWorkspace().act(new ZAProxyCallable(this.zaproxy, listener));
 		} catch (Exception e) {
 			e.printStackTrace();
 			listener.error(e.toString());
 			return false;
-		} finally {
-			zaproxy.stopZAP(listener);
 		}
-		
-		return true;
+		return res;
 	}
 	
 	
@@ -196,5 +220,32 @@ public class ZAProxyBuilder extends Builder {
 		public int getZapProxyPort() {
 			return zapProxyPort;
 		}
+	}
+	
+	/**
+	 * Used to execute ZAP remotely.
+	 * 
+	 * @author ludovic.roucoux
+	 *
+	 */
+	private static class ZAProxyCallable implements FileCallable<Boolean> {
+
+		private static final long serialVersionUID = -313398999885177679L;
+		
+		private ZAProxy zaproxy;
+		private BuildListener listener;
+		
+		public ZAProxyCallable(ZAProxy zaproxy, BuildListener listener) {
+			this.zaproxy = zaproxy;
+			this.listener = listener;
+		}
+
+		@Override
+		public Boolean invoke(File f, VirtualChannel channel) {
+			return zaproxy.executeZAP(new FilePath(f), listener);
+		}
+		
+		@Override
+		public void checkRoles(RoleChecker checker) throws SecurityException {}
 	}
 }

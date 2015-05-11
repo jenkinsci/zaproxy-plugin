@@ -35,8 +35,9 @@ SOFTWARE.
 		<f:number default="60" clazz="required positive-number" />
 	</f:entry>
 	
+	
 	<f:radioBlock title="${%ZAProxy is installed by Jenkins}" name="autoInstall" value="true" 
-	checked="${instance.autoInstall == true}" inline="true">
+	checked="${instance == null || instance.autoInstall == true}" inline="true">
 		<f:entry title="${%Tool to use}" field="toolUsed">
 			<f:select />
 		</f:entry>
@@ -57,13 +58,12 @@ SOFTWARE.
 		</f:section>
 	</f:advanced>
 	
-	<f:section title="${%Setup}">
-		<f:invisibleEntry field="workspace" >
-			<f:textbox name="workspace" value="${it.workspace}"/>
-		</f:invisibleEntry>
+	<f:section title="${%Setup}">		
+		<j:invoke on="${descriptor}" method="setWorkspace" >
+			<j:arg type="hudson.FilePath" value="${it.someWorkspace}"/>
+		</j:invoke>
 	
 		<f:entry title="${%Load session}" field="filenameLoadSession">
-			<!--<f:textbox />-->
 			<f:select />
 		</f:entry>	
 	

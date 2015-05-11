@@ -24,8 +24,10 @@
 
 package fr.novia.zaproxyplugin.report;
 
-import org.zaproxy.clientapi.core.ClientApiException;
 import org.zaproxy.clientapi.core.ClientApi;
+import org.zaproxy.clientapi.core.ClientApiException;
+
+import java.io.Serializable;
 
 /**
  * This abstract class is used to generate report in ZAP available format.
@@ -33,10 +35,13 @@ import org.zaproxy.clientapi.core.ClientApi;
  * @author ludovic.roucoux
  *
  */
-public abstract class ZAPreport {
+public abstract class ZAPreport implements Serializable {
+	private static final long serialVersionUID = 2241940678203529066L;
+	
 	protected static final String REPORT_FORMAT_XML = "xml";
 	protected static final String REPORT_FORMAT_HTML = "html";
 	
+	/** The report format */
 	protected String format;
 		
 	/**
