@@ -40,16 +40,13 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * /!\ 
@@ -127,7 +124,7 @@ public class ZAProxyBuilder extends Builder {
 				zaproxy.startZAP(build, listener, launcher);
 			} catch (Exception e) {
 				e.printStackTrace();
-				listener.error(e.toString());
+				listener.error(ExceptionUtils.getStackTrace(e));
 				return false;
 			}
 			listener.getLogger().println("------- END Prebuild -------");
@@ -135,7 +132,7 @@ public class ZAProxyBuilder extends Builder {
 		return true;
 	}
 
-	// Method called when launching the build
+	// Method called when the build is launching
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
 		
@@ -146,7 +143,7 @@ public class ZAProxyBuilder extends Builder {
 				zaproxy.startZAP(build, listener, launcher);
 			} catch (Exception e) {
 				e.printStackTrace();
-				listener.error(e.toString());
+				listener.error(ExceptionUtils.getStackTrace(e));
 				return false;
 			}
 		}
@@ -157,14 +154,14 @@ public class ZAProxyBuilder extends Builder {
 			res = build.getWorkspace().act(new ZAProxyCallable(this.zaproxy, listener));
 		} catch (Exception e) {
 			e.printStackTrace();
-			listener.error(e.toString());
+			listener.error(ExceptionUtils.getStackTrace(e));
 			return false;
 		}
 		return res;
 	}
 	
 	private void copyFile(FilePath workspace, BuildListener listener) throws IOException, InterruptedException {
-		//if(zaproxy.getScanURL() && !zaproxy.pathToLocalPolicy.isEmpty() && zaproxy.pathToLocalPolicy != null)
+		//if(zaproxy.getScanURL() && zaproxy.pathToLocalPolicy != null && !zaproxy.pathToLocalPolicy.isEmpty())
 		// TODO a recup via un champ
 		// File fileToCopy = new File(zaproxy.pathToLocalPolicy);
 		File fileToCopy = new File("C:\\Users\\ludovic.roucoux\\OWASP ZAP\\policies\\OnlySQLInjection.policy");

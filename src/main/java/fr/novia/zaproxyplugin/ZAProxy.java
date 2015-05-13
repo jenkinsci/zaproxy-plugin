@@ -52,6 +52,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tools.ant.BuildException;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -61,8 +62,6 @@ import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
-
-import javax.servlet.ServletException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -75,21 +74,13 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.net.URL;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-import java.nio.file.WatchEvent.Kind;
-import java.nio.file.WatchEvent.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -344,40 +335,38 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param build
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @return the installed tool location, without zap.bat or zap.sh at the end
+	 * @throws InterruptedException 
+	 * @throws IOException 
 	 * @see <a href="https://groups.google.com/forum/#!topic/jenkinsci-dev/RludxaYjtDk">
 	 * 	https://groups.google.com/forum/#!topic/jenkinsci-dev/RludxaYjtDk</a>
 	 */
-	private String retrieveZapHomeWithToolInstall(AbstractBuild<?, ?> build, BuildListener listener) {	
+	private String retrieveZapHomeWithToolInstall(AbstractBuild<?, ?> build, BuildListener listener) 
+			throws IOException, InterruptedException {	
 		
 		EnvVars env = null;
 		Node node = null;
 		String installPath = null;
-		
-		try {	
-			if(autoInstall) {
-				env = build.getEnvironment(listener);
-				node = build.getBuiltOn();
-				for (ToolDescriptor<?> desc : ToolInstallation.all()) {
-					for (ToolInstallation tool : desc.getInstallations()) {
-						if (tool.getName().equals(toolUsed)) {
-							if (tool instanceof NodeSpecific) {
-								tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(node, listener);
-							}
-							if (tool instanceof EnvironmentSpecific) {
-								tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
-							}
-							installPath = tool.getHome();
-							
-							return installPath;
+			
+		if(autoInstall) {
+			env = build.getEnvironment(listener);
+			node = build.getBuiltOn();
+			for (ToolDescriptor<?> desc : ToolInstallation.all()) {
+				for (ToolInstallation tool : desc.getInstallations()) {
+					if (tool.getName().equals(toolUsed)) {
+						if (tool instanceof NodeSpecific) {
+							tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(node, listener);
 						}
+						if (tool instanceof EnvironmentSpecific) {
+							tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
+						}
+						installPath = tool.getHome();
+						
+						return installPath;
 					}
 				}
-			} else {
-				installPath = build.getEnvironment(listener).get(zapHome);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			listener.error(e.toString());
+		} else {
+			installPath = build.getEnvironment(listener).get(zapHome);
 		}
 		return installPath;
 	}
@@ -447,28 +436,31 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * 
 	 * @param build
 	 * @param listener the listener to display log during the job execution in jenkins
+	 * @throws InterruptedException 
+	 * @throws IOException 
 	 * @throws Exception throw an exception if a parameter is invalid.
 	 */
-	private void checkParams(AbstractBuild<?, ?> build, BuildListener listener) throws Exception {
+	private void checkParams(AbstractBuild<?, ?> build, BuildListener listener) 
+			throws IllegalArgumentException, IOException, InterruptedException {
 		zapProgram = retrieveZapHomeWithToolInstall(build, listener);
 		
-		if(zapProgram.isEmpty() || zapProgram == null) {
-			throw new Exception("zapProgram is missing");
+		if(zapProgram == null || zapProgram.isEmpty()) {
+			throw new IllegalArgumentException("zapProgram is missing");
 		} else
 			listener.getLogger().println("zapProgram = " + zapProgram);
 		
-		if(targetURL.isEmpty() || targetURL == null) {
-			throw new Exception("targetURL is missing");
+		if(targetURL == null || targetURL.isEmpty()) {
+			throw new IllegalArgumentException("targetURL is missing");
 		} else
 			listener.getLogger().println("targetURL = " + targetURL);
 
-		if(zapProxyHost.isEmpty() || zapProxyHost == null) {
-			throw new Exception("zapProxy Host is missing");
+		if(zapProxyHost == null || zapProxyHost.isEmpty()) {
+			throw new IllegalArgumentException("zapProxy Host is missing");
 		} else
 			listener.getLogger().println("zapProxyHost = " + zapProxyHost);
 
 		if(zapProxyPort < 0) {
-			throw new Exception("zapProxy Port is less than 0");
+			throw new IllegalArgumentException("zapProxy Port is less than 0");
 		} else
 			listener.getLogger().println("zapProxyPort = " + zapProxyPort);
 		
@@ -483,9 +475,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param build
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param launcher the object to launch a process locally or remotely
-	 * @throws Exception
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 * @throws IllegalArgumentException 
 	 */
-	public void startZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher) throws Exception {
+	public void startZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher) 
+			throws IllegalArgumentException, IOException, InterruptedException {
 		checkParams(build, listener);
 		
 		FilePath ws = build.getWorkspace();
@@ -509,7 +504,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		cmd.add(CMD_LINE_PORT); cmd.add(String.valueOf(zapProxyPort));
 		
 		// Set the default directory used by ZAP if it's defined and if a scan is provided
-		if(scanURL && !zapDefaultDir.equals("") && zapDefaultDir != null) {
+		if(scanURL && zapDefaultDir != null && !zapDefaultDir.equals("")) {
 			cmd.add(CMD_LINE_DIR); cmd.add(zapDefaultDir);
 		}
 		
@@ -517,36 +512,29 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		if(!cmdLinesZAP.isEmpty()) {
 			addZapCmdLine(cmd);
 		}
+			
+		EnvVars envVars = build.getEnvironment(listener);
+		// on Windows environment variables are converted to all upper case,
+		// but no such conversions are done on Unix, so to make this cross-platform,
+		// convert variables to all upper cases.
+		for(Map.Entry<String,String> e : build.getBuildVariables().entrySet())
+			envVars.put(e.getKey(),e.getValue());
 		
-		try {
-			EnvVars envVars = build.getEnvironment(listener);
-			// on Windows environment variables are converted to all upper case,
-			// but no such conversions are done on Unix, so to make this cross-platform,
-			// convert variables to all upper cases.
-			for(Map.Entry<String,String> e : build.getBuildVariables().entrySet())
-				envVars.put(e.getKey(),e.getValue());
-			
-			FilePath workDir = new FilePath(ws.getChannel(), zapProgram);
-			listener.getLogger().println("ws.getChannel() = " + ws.getChannel());
-			
-			// Java
-			computeJdkToUse(build, listener, envVars);
-			
-			// Launch ZAP process on remote machine (on master if no remote machine)
-			launcher.launch().cmds(cmd).envs(envVars).stdout(listener).pwd(workDir).start();
-			
-			// Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely
-			build.getWorkspace().act(new WaitZAProxyInitCallable(this, listener));
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			listener.error(e.toString());
-		}
+		FilePath workDir = new FilePath(ws.getChannel(), zapProgram);
+		listener.getLogger().println("ws.getChannel() = " + ws.getChannel());
+		
+		// Java
+		computeJdkToUse(build, listener, envVars);
+		
+		// Launch ZAP process on remote machine (on master if no remote machine)
+		launcher.launch().cmds(cmd).envs(envVars).stdout(listener).pwd(workDir).start();
+		
+		// Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely
+		build.getWorkspace().act(new WaitZAProxyInitCallable(this, listener));
 	}
 	
 	private void computeJdkToUse(AbstractBuild<?, ?> build,
-			BuildListener listener, EnvVars env) throws IOException,
-			InterruptedException {
+			BuildListener listener, EnvVars env) throws IOException, InterruptedException {
 		JDK jdkToUse = getJdkToUse(build.getProject());
 		if (jdkToUse != null) {
 			Computer computer = Computer.currentComputer();
@@ -576,10 +564,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private void addZapCmdLine(List<String> l) {
 		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
 			String cmd = "";
-			if(!zapCmd.getCmdLineOption().isEmpty() && zapCmd.getCmdLineOption() != null) {
+			if(zapCmd.getCmdLineOption() != null && !zapCmd.getCmdLineOption().isEmpty()) {
 				cmd += zapCmd.getCmdLineOption();
 			}
-			if(!zapCmd.getCmdLineValue().isEmpty() && zapCmd.getCmdLineValue() != null) {
+			if(zapCmd.getCmdLineValue() != null && !zapCmd.getCmdLineValue().isEmpty()) {
 				cmd += "=";
 				cmd += zapCmd.getCmdLineValue();
 			}
@@ -610,7 +598,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				socket.connect(new InetSocketAddress(zapProxyHost, zapProxyPort), connectionTimeoutInMs);
 				connectionSuccessful = true;
 			} catch (SocketTimeoutException ignore) {
-				listener.error("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
+				listener.error(ExceptionUtils.getStackTrace(ignore));
 				throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
 				
 			} catch (IOException ignore) {
@@ -618,13 +606,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				try {
 					Thread.sleep(pollingIntervalInMs);
 				} catch (InterruptedException e) {
-					listener.error("The task was interrupted while sleeping between connection polling.", e);
+					listener.error(ExceptionUtils.getStackTrace(ignore));
 					throw new BuildException("The task was interrupted while sleeping between connection polling.", e);
 				}
 
 				long ellapsedTime = System.currentTimeMillis() - startTime;
 				if (ellapsedTime >= timeoutInMs) {
-					listener.error("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
+					listener.error(ExceptionUtils.getStackTrace(ignore));
 					throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
 				}
 				connectionTimeoutInMs = (int) (timeoutInMs - ellapsedTime);
@@ -634,7 +622,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 						socket.close();
 					} catch (IOException e) {
 						e.printStackTrace();
-						listener.error(e.toString());
+						listener.error(ExceptionUtils.getStackTrace(e));
 					}
 				}
 			}
@@ -689,10 +677,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param workspace a {@link FilePath} representing the build's workspace
 	 * @param clientApi the ZAP client API to call method
-	 * @throws Exception
+	 * @throws ClientApiException 
+	 * @throws IOException
 	 */
 	private void saveReport(ZAPreport reportFormat, BuildListener listener, FilePath workspace, 
-			ClientApi clientApi) throws Exception {
+			ClientApi clientApi) throws IOException, ClientApiException {
 		final String fullFileName = filenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
 		FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
@@ -709,6 +698,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public boolean executeZAP(FilePath workspace, BuildListener listener) {
 		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
 		
+		// Try/catch here because I need to stopZAP in finally block and for that,
+		// I need the zapClientAPI created in this method
 		try {
 			/* ======================================================= 
 			 * |                  LOAD SESSION                        |
@@ -781,10 +772,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
 		} catch (Exception e) {
 			e.printStackTrace();
-			listener.error(e.toString());
+			listener.error(ExceptionUtils.getStackTrace(e));
 			return false;
 		} finally {
-			stopZAP(zapClientAPI, listener);
+			try {
+				stopZAP(zapClientAPI, listener);
+			} catch (ClientApiException e) {
+				e.printStackTrace();
+				listener.error(ExceptionUtils.getStackTrace(e));
+				return false;
+			}
 		}
 		return true;
 	}
@@ -808,7 +805,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws ClientApiException
 	 * @throws InterruptedException 
 	 */
-	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) throws ClientApiException, InterruptedException {
+	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
+			throws ClientApiException, InterruptedException {
 		// Method signature : scan(String key, String url, String maxChildren)
 		zapClientAPI.spider.scan(API_KEY, url, "");
 
@@ -830,7 +828,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws ClientApiException
 	 * @throws InterruptedException 
 	 */
-	private void scanURL(final String url, BuildListener listener, ClientApi zapClientAPI) throws ClientApiException, InterruptedException {
+	private void scanURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
+			throws ClientApiException, InterruptedException {
 		if(chosenPolicy == null || chosenPolicy.equals("")) {
 			listener.getLogger().println("Scan url [" + url + "] with the policy by default");		
 		} else {
@@ -857,16 +856,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * 
 	 * @param zapClientAPI the client API to use ZAP API methods
 	 * @param listener the listener to display log during the job execution in jenkins
+	 * @throws ClientApiException 
 	 */
-	private void stopZAP(ClientApi zapClientAPI, BuildListener listener) {
+	private void stopZAP(ClientApi zapClientAPI, BuildListener listener) throws ClientApiException {
 		if (zapClientAPI != null) {
-			try {
-				listener.getLogger().println("Shutdown ZAProxy");
-				zapClientAPI.core.shutdown(API_KEY);
-			} catch (final Exception e) {
-				listener.error(e.toString());
-				e.printStackTrace();
-			}
+			listener.getLogger().println("Shutdown ZAProxy");
+			zapClientAPI.core.shutdown(API_KEY);
 		} else {
 			listener.getLogger().println("No shutdown of ZAP (zapClientAPI==null)");
 		}
@@ -940,8 +935,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		 *      prevent the form from being saved. It just means that a message
 		 *      will be displayed to the user.
 		 */
-		public FormValidation doCheckFilenameReports(@QueryParameter("filenameReports") final String filenameReports)
-				throws IOException, ServletException {
+		public FormValidation doCheckFilenameReports(@QueryParameter("filenameReports") final String filenameReports) {
 			if(filenameReports.isEmpty())
 				return FormValidation.error("Field is required");
 			if(!FilenameUtils.getExtension(filenameReports).equals(""))
@@ -966,9 +960,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		 *      prevent the form from being saved. It just means that a message
 		 *      will be displayed to the user.
 		 */
-		public FormValidation doCheckFilenameSaveSession(@QueryParameter("filenameLoadSession") final String filenameLoadSession,
-				@QueryParameter("filenameSaveSession") final String filenameSaveSession)
-				throws IOException, ServletException {
+		public FormValidation doCheckFilenameSaveSession(
+				@QueryParameter("filenameLoadSession") final String filenameLoadSession,
+				@QueryParameter("filenameSaveSession") final String filenameSaveSession) {
 			// Contains just the name of the session (without workspace path and extension)
 			String cleanFilenameLoadSession = null;
 			if(workspace != null) {
@@ -1065,7 +1059,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				Collection<String> sessionsInString = workspace.act(new FileCallable<Collection<String>>() {
 					private static final long serialVersionUID = 1328740269013881941L;
 	
-					public Collection<String> invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+					public Collection<String> invoke(File f, VirtualChannel channel) {
 						
 						// List all files with FILE_SESSION_EXTENSION on the machine where the workspace is located
 						Collection<File> colFiles = FileUtils.listFiles(f,
@@ -1116,7 +1110,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			this.zapDefaultDir = zapDefaultDir;
 		}
 
-		public File[] invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+		public File[] invoke(File f, VirtualChannel channel) {
 			File[] listFiles = {};
 			
 			Path pathPolicyDir = Paths.get(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
@@ -1174,14 +1168,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		}
 
 		@Override
-		public Void invoke(File f, VirtualChannel channel) throws IOException,
-				InterruptedException {
-			try {
-				zaproxy.waitForSuccessfulConnectionToZap(zaproxy.timeoutInSec, listener);
-			} catch (Exception e) {
-				e.printStackTrace();
-				listener.error(e.toString());
-			}
+		public Void invoke(File f, VirtualChannel channel) {
+			zaproxy.waitForSuccessfulConnectionToZap(zaproxy.timeoutInSec, listener);
 			return null;
 		}
 		
