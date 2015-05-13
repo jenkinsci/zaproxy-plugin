@@ -35,7 +35,10 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.BuildListener;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
+import hudson.model.JDK;
 import hudson.model.Node;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
@@ -44,6 +47,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
@@ -71,10 +75,21 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -169,6 +184,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** List of all ZAP command lines specified by the user */
 	private final List<ZAPcmdLine> cmdLinesZAP;
 	
+	private final String jdk;
+	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
@@ -176,7 +193,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP) {
+			List<ZAPcmdLine> cmdLinesZAP,
+			String jdk) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -194,6 +212,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : Collections.<ZAPcmdLine>emptyList();
+		
+		this.jdk = jdk;
 		System.out.println(this.toString());
 	}
 	
@@ -218,6 +238,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		s += "zapProxyHost ["+zapProxyHost+"]\n";
 		s += "zapProxyPort ["+zapProxyPort+"]\n";
+		
+		s+= "jdk ["+jdk+"]";
 		
 		return s;
 	}
@@ -303,6 +325,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	public List<ZAPcmdLine> getCmdLinesZAP() {
 		return cmdLinesZAP;
+	}
+	
+	/**
+	 * Gets the JDK that this Sonar builder is configured with, or null.
+	 */
+	public JDK getJDK() {
+		return Jenkins.getInstance().getJDK(jdk);
+	}
+
+	public String getJdk() {
+		return jdk;
 	}
 
 	/**
@@ -494,6 +527,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				envVars.put(e.getKey(),e.getValue());
 			
 			FilePath workDir = new FilePath(ws.getChannel(), zapProgram);
+			listener.getLogger().println("ws.getChannel() = " + ws.getChannel());
+			
+			// Java
+			computeJdkToUse(build, listener, envVars);
 			
 			// Launch ZAP process on remote machine (on master if no remote machine)
 			launcher.launch().cmds(cmd).envs(envVars).stdout(listener).pwd(workDir).start();
@@ -503,7 +540,33 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			
 		} catch (IOException e) {
 			e.printStackTrace();
+			listener.error(e.toString());
 		}
+	}
+	
+	private void computeJdkToUse(AbstractBuild<?, ?> build,
+			BuildListener listener, EnvVars env) throws IOException,
+			InterruptedException {
+		JDK jdkToUse = getJdkToUse(build.getProject());
+		if (jdkToUse != null) {
+			Computer computer = Computer.currentComputer();
+			// just in case we are not in a build
+			if (computer != null) {
+				jdkToUse = jdkToUse.forNode(computer.getNode(), listener);
+			}
+			jdkToUse.buildEnvVars(env);
+		}
+	}
+
+	/**
+	 * @return JDK to be used with this project.
+	 */
+	private JDK getJdkToUse(AbstractProject<?, ?> project) {
+		JDK jdkToUse = getJDK();
+		if (jdkToUse == null) {
+			jdkToUse = project.getJDK();
+		}
+		return jdkToUse;
 	}
 	
 	/**
@@ -571,6 +634,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 						socket.close();
 					} catch (IOException e) {
 						e.printStackTrace();
+						listener.error(e.toString());
 					}
 				}
 			}
@@ -1053,11 +1117,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		}
 
 		public File[] invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-			
-			File zapDir = new File(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
 			File[] listFiles = {};
 			
-			if(zapDir.exists()) {
+			Path pathPolicyDir = Paths.get(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
+			
+			if(Files.isDirectory(pathPolicyDir)) {
+				File zapPolicyDir = new File(zapDefaultDir, NAME_POLICIES_DIR_ZAP);
 				// create new filename filter (get only file with FILE_POLICY_EXTENSION extension)
 				FilenameFilter policyFilter = new FilenameFilter() {
 
@@ -1080,7 +1145,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				};
 				
 				// returns pathnames for files and directory
-				listFiles = zapDir.listFiles(policyFilter);
+				listFiles = zapPolicyDir.listFiles(policyFilter);
 			}
 			return listFiles;
 		}
@@ -1115,6 +1180,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				zaproxy.waitForSuccessfulConnectionToZap(zaproxy.timeoutInSec, listener);
 			} catch (Exception e) {
 				e.printStackTrace();
+				listener.error(e.toString());
 			}
 			return null;
 		}

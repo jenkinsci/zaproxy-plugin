@@ -24,27 +24,32 @@
 
 package fr.novia.zaproxyplugin;
 
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
-import hudson.remoting.VirtualChannel;
-import org.jenkinsci.remoting.RoleChecker;
-
-import java.io.File;
-
-import hudson.model.Node;
-import hudson.slaves.SlaveComputer;
-import hudson.Extension;
 import hudson.Launcher;
 import hudson.Launcher.LocalLauncher;
 import hudson.Launcher.RemoteLauncher;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Node;
+import hudson.remoting.VirtualChannel;
+import hudson.slaves.SlaveComputer;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * /!\ 
@@ -148,6 +153,7 @@ public class ZAProxyBuilder extends Builder {
 		
 		boolean res;
 		try {
+			//copyFile(build.getWorkspace(), listener);
 			res = build.getWorkspace().act(new ZAProxyCallable(this.zaproxy, listener));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -155,6 +161,49 @@ public class ZAProxyBuilder extends Builder {
 			return false;
 		}
 		return res;
+	}
+	
+	private void copyFile(FilePath workspace, BuildListener listener) throws IOException, InterruptedException {
+		//if(zaproxy.getScanURL() && !zaproxy.pathToLocalPolicy.isEmpty() && zaproxy.pathToLocalPolicy != null)
+		// TODO a recup via un champ
+		// File fileToCopy = new File(zaproxy.pathToLocalPolicy);
+		File fileToCopy = new File("C:\\Users\\ludovic.roucoux\\OWASP ZAP\\policies\\OnlySQLInjection.policy");
+		
+		String stringForLogger = "Copy [" + fileToCopy.getAbsolutePath() + "] to ";
+		
+		String data = FileUtils.readFileToString(fileToCopy, (String)null);
+		
+		stringForLogger = workspace.act(new CopyFileCallable(data, zaproxy.getZapDefaultDir(),
+				fileToCopy.getName(), stringForLogger));
+		listener.getLogger().println(stringForLogger);
+	}
+	
+	private static class CopyFileCallable implements FileCallable<String> {
+		private static final long serialVersionUID = -3375349701206827354L;
+		private String data;
+		private String zapDefaultDir;
+		private String copyFilename;
+		private String stringForLogger;
+		
+		public CopyFileCallable(String data, String zapDefaultDir,
+				String copyFilename, String stringForLogger) {
+			this.data = data;
+			this.zapDefaultDir = zapDefaultDir;
+			this.copyFilename = copyFilename;
+			this.stringForLogger = stringForLogger;
+		}
+
+		public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+			File fileCopiedDir = new File(zapDefaultDir, ZAProxy.NAME_POLICIES_DIR_ZAP);
+			File fileCopied = new File(fileCopiedDir, copyFilename);
+			
+			FileUtils.writeStringToFile(fileCopied, data);
+			stringForLogger += "[" + fileCopied.getAbsolutePath() + "]";
+			return stringForLogger;
+		}
+
+		@Override
+		public void checkRoles(RoleChecker checker) throws SecurityException {}
 	}
 	
 	

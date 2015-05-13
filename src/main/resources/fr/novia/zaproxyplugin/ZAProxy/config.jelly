@@ -30,6 +30,17 @@ SOFTWARE.
 	See global.jelly for a general discussion about jelly script.
 	-->
 	
+	<!-- JDK -->
+	<j:set var="jdks" value="${app.JDKs}" />
+	<f:entry title="JDK" field="jdk">
+		<select class="setting-input validated" name="jdk" checkUrl="'${rootURL}/defaultJDKCheck?value='+this.value">
+			<option>${%InheritFromJob}</option>
+			<j:forEach var="inst" items="${jdks}">
+				<f:option selected="${inst.name==instance.JDK.name}" value="${inst.name}">${inst.name}</f:option>
+			</j:forEach>
+		</select>
+	</f:entry>
+	
 	<f:entry title="Timeout for ZAProxy initialization" field="timeoutInSec"
 	description="Enter a value in seconde">
 		<f:number default="60" clazz="required positive-number" />
