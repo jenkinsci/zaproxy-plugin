@@ -150,7 +150,7 @@ public class ZAProxyBuilder extends Builder {
 		
 		boolean res;
 		try {
-			//copyFile(build.getWorkspace(), listener);
+			//copyPolicyFile(build.getWorkspace(), listener); // TODO maybe in future version
 			res = build.getWorkspace().act(new ZAProxyCallable(this.zaproxy, listener));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -160,7 +160,15 @@ public class ZAProxyBuilder extends Builder {
 		return res;
 	}
 	
-	private void copyFile(FilePath workspace, BuildListener listener) throws IOException, InterruptedException {
+	/**
+	 * Copy local policy file to slave in policies directory of ZAP default directory.
+	 * 
+	 * @param workspace the workspace of the build
+	 * @param listener
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	private void copyPolicyFile(FilePath workspace, BuildListener listener) throws IOException, InterruptedException {
 		//if(zaproxy.getScanURL() && zaproxy.pathToLocalPolicy != null && !zaproxy.pathToLocalPolicy.isEmpty())
 		// TODO a recup via un champ
 		// File fileToCopy = new File(zaproxy.pathToLocalPolicy);
@@ -175,6 +183,12 @@ public class ZAProxyBuilder extends Builder {
 		listener.getLogger().println(stringForLogger);
 	}
 	
+	/**
+	 * Allows to copy local policy file to the default ZAP policies directory in slave.
+	 * 
+	 * @author ludovic.roucoux
+	 *
+	 */
 	private static class CopyFileCallable implements FileCallable<String> {
 		private static final long serialVersionUID = -3375349701206827354L;
 		private String data;

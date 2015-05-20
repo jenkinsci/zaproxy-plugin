@@ -521,9 +521,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			envVars.put(e.getKey(),e.getValue());
 		
 		FilePath workDir = new FilePath(ws.getChannel(), zapProgram);
-		listener.getLogger().println("ws.getChannel() = " + ws.getChannel());
 		
-		// Java
+		// JDK choice
 		computeJdkToUse(build, listener, envVars);
 		
 		// Launch ZAP process on remote machine (on master if no remote machine)
@@ -533,6 +532,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		build.getWorkspace().act(new WaitZAProxyInitCallable(this, listener));
 	}
 	
+	/**
+	 * Set the JDK to use to start ZAP.
+	 * 
+	 * @param build
+	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param env list of environment variables. Used to set the path to the JDK
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	private void computeJdkToUse(AbstractBuild<?, ?> build,
 			BuildListener listener, EnvVars env) throws IOException, InterruptedException {
 		JDK jdkToUse = getJdkToUse(build.getProject());
