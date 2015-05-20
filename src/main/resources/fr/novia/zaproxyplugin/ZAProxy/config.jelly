@@ -30,11 +30,16 @@ SOFTWARE.
 	See global.jelly for a general discussion about jelly script.
 	-->
 	
-	<f:entry title="Timeout for ZAProxy initialization" field="timeoutInSec"
-	description="Enter a value in seconde">
-		<f:number default="60" clazz="required positive-number" />
+	<!-- JDK -->
+	<j:set var="jdks" value="${app.JDKs}" />
+	<f:entry title="${%JDK}" field="jdk">
+		<select class="setting-input validated" name="jdk" checkUrl="'${rootURL}/defaultJDKCheck?value='+this.value">
+			<option>${%InheritFromJob}</option>
+			<j:forEach var="inst" items="${jdks}">
+				<f:option selected="${inst.name==instance.JDK.name}" value="${inst.name}">${inst.name}</f:option>
+			</j:forEach>
+		</select>
 	</f:entry>
-	
 	
 	<f:radioBlock title="${%ZAProxy is installed by Jenkins}" name="autoInstall" value="true" 
 	checked="${instance == null || instance.autoInstall == true}" inline="true">
@@ -51,6 +56,11 @@ SOFTWARE.
 	</f:radioBlock>
 	
 	<f:advanced>
+		<f:entry title="${%Timeout for ZAProxy initialization}" field="timeoutInSec"
+		description="Enter a value in seconde">
+			<f:number default="60" clazz="required positive-number" />
+		</f:entry>
+		
 		<f:section title="${%Add ZAProxy command line option}">
 			<f:block>
 				<f:repeatableProperty field="cmdLinesZAP" add="${%Add command line option}"/>
