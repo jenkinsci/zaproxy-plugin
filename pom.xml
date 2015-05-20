@@ -32,6 +32,11 @@
 				</developer>
 		</developers>
 		<scm>
+				<!-- <connection>scm:git:ssh://github.com/jenkinsci/zaproxy-plugin.git</connection>
+				<developerConnection>scm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
+				<url>http://github.com/jenkinsci/zaproxy-plugin</url>
+				<tag>zaproxy-jenkins-1.0</tag>
+				-->
 				<connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
 				<developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
