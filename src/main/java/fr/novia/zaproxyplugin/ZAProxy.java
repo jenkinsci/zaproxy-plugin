@@ -174,6 +174,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** List of all ZAP command lines specified by the user */
 	private final List<ZAPcmdLine> cmdLinesZAP;
 	
+	/** The jdk to use to start ZAProxy */
 	private final String jdk;
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
