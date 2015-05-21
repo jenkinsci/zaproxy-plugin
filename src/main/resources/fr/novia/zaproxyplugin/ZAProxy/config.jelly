@@ -41,7 +41,7 @@ SOFTWARE.
 		</select>
 	</f:entry>
 	
-	<f:radioBlock title="${%ZAProxy is installed by Jenkins with a plugin (like Custom Tools Plugin)}" 
+	<f:radioBlock title="${%ZAProxy is installed by Jenkins with a plugin like Custom Tools Plugin}" 
 	name="autoInstall" value="true" checked="${instance == null || instance.autoInstall == true}" inline="true">
 		<f:entry title="${%Tool to use}" field="toolUsed">
 			<f:select />
