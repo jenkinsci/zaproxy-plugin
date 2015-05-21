@@ -103,7 +103,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public static final String NAME_POLICIES_DIR_ZAP = "policies";
 	
 	public static final String CMD_LINE_DIR = "-dir";
-	public static final String CMD_LINE_CONFIG = "-config";
 	public static final String CMD_LINE_HOST = "-host";
 	public static final String CMD_LINE_PORT = "-port";
 	public static final String CMD_LINE_DAEMON = "-daemon";
@@ -571,16 +570,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void addZapCmdLine(List<String> l) {
 		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
-			String cmd = "";
 			if(zapCmd.getCmdLineOption() != null && !zapCmd.getCmdLineOption().isEmpty()) {
-				cmd += zapCmd.getCmdLineOption();
+				l.add(zapCmd.getCmdLineOption());
 			}
 			if(zapCmd.getCmdLineValue() != null && !zapCmd.getCmdLineValue().isEmpty()) {
-				cmd += "=";
-				cmd += zapCmd.getCmdLineValue();
+				l.add(zapCmd.getCmdLineValue());
 			}
-			l.add(CMD_LINE_CONFIG);
-			l.add(cmd);
 		}
 	}
 	
