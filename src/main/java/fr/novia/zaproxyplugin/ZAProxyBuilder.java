@@ -110,11 +110,11 @@ public class ZAProxyBuilder extends Builder {
 				
 				// Create launcher according to the build's location (Master or Slave) and the build's OS
 				
-				if(node.getNodeName().equals("")) { // Build on master 
+				if("".equals(node.getNodeName())) { // Build on master 
 					launcher = new LocalLauncher(listener, build.getWorkspace().getChannel());
 				} else { // Build on slave
 					boolean isUnix;
-					if( ((SlaveComputer)node.toComputer()).getOSDescription().equals("Unix") ) {
+					if( "Unix".equals(((SlaveComputer)node.toComputer()).getOSDescription()) ) {
 						isUnix = true;
 					} else {
 						isUnix = false;
@@ -214,7 +214,9 @@ public class ZAProxyBuilder extends Builder {
 		}
 
 		@Override
-		public void checkRoles(RoleChecker checker) throws SecurityException {}
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// Nothing to do
+		}
 	}
 	
 	
@@ -306,6 +308,8 @@ public class ZAProxyBuilder extends Builder {
 		}
 		
 		@Override
-		public void checkRoles(RoleChecker checker) throws SecurityException {}
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// Nothing to do
+		}
 	}
 }

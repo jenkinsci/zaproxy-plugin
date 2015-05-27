@@ -57,6 +57,7 @@ public abstract class ZAPreport implements Serializable {
 		return format;
 	}
 	
+	@Override
 	public String toString() {
 		return getFormat();
 	}

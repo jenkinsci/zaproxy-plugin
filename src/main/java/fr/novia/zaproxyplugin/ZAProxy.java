@@ -71,6 +71,7 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -153,8 +154,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Save reports or not */
 	private final boolean saveReports;
 
-	/** List of chosen format for reports */
-	private final List<String> chosenFormats;
+	/** List of chosen format for reports.
+	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
+	 */
+	private final ArrayList<String> chosenFormats;
 	
 	/** Filename for ZAProxy reports. It can contain a relative path. */
 	private final String filenameReports;
@@ -171,8 +174,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** The file policy to use for the scan. It contains only the policy name (without extension) */
 	private final String chosenPolicy;
 	
-	/** List of all ZAP command lines specified by the user */
-	private final List<ZAPcmdLine> cmdLinesZAP;
+	/** List of all ZAP command lines specified by the user 
+	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
+	 */
+	private final ArrayList<ZAPcmdLine> cmdLinesZAP;
 	
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
@@ -184,8 +189,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP,
-			String jdk) {
+			List<ZAPcmdLine> cmdLinesZAP, String jdk) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -202,7 +206,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.filenameSaveSession = filenameSaveSession;
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
-		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : Collections.<ZAPcmdLine>emptyList();
+		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
 		
 		this.jdk = jdk;
 		System.out.println(this.toString());
@@ -384,7 +388,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		String zapProgramName = "";
 		
 		// Append zap program following Master/Slave and Windows/Unix
-		if( node.getNodeName().equals("")) { // Master
+		if( "".equals(node.getNodeName())) { // Master
 			if( File.pathSeparatorChar == ':' ) { // UNIX
 				zapProgramName = ZAP_PROG_NAME_SH;
 			} else { // Windows (pathSeparatorChar == ';')
@@ -392,7 +396,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		} 
 		else { // Slave
-			if( ((SlaveComputer)node.toComputer()).getOSDescription().equals("Unix") ) {
+			if( "Unix".equals(((SlaveComputer)node.toComputer()).getOSDescription()) ) {
 				zapProgramName = ZAP_PROG_NAME_SH;
 			} else {
 				zapProgramName = ZAP_PROG_NAME_BAT;
@@ -414,7 +418,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		String zapProgramName = "";
 		
 		// Append zap program following Master/Slave and Windows/Unix
-		if( node.getNodeName().equals("")) { // Master
+		if( "".equals(node.getNodeName())) { // Master
 			if( File.pathSeparatorChar == ':' ) { // UNIX
 				zapProgramName = "/" + ZAP_PROG_NAME_SH;
 			} else { // Windows (pathSeparatorChar == ';')
@@ -422,7 +426,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		} 
 		else { // Slave
-			if( ((SlaveComputer)node.toComputer()).getOSDescription().equals("Unix") ) {
+			if( "Unix".equals(((SlaveComputer)node.toComputer()).getOSDescription()) ) {
 				zapProgramName = "/" + ZAP_PROG_NAME_SH;
 			} else {
 				zapProgramName = "\\" + ZAP_PROG_NAME_BAT;
@@ -500,12 +504,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapPathWithProgName.getRemote());
 		cmd.add(CMD_LINE_DAEMON);
-		cmd.add(CMD_LINE_HOST); cmd.add(zapProxyHost);
-		cmd.add(CMD_LINE_PORT); cmd.add(String.valueOf(zapProxyPort));
+		cmd.add(CMD_LINE_HOST);
+		cmd.add(zapProxyHost);
+		cmd.add(CMD_LINE_PORT);
+		cmd.add(String.valueOf(zapProxyPort));
 		
 		// Set the default directory used by ZAP if it's defined and if a scan is provided
-		if(scanURL && zapDefaultDir != null && !zapDefaultDir.equals("")) {
-			cmd.add(CMD_LINE_DIR); cmd.add(zapDefaultDir);
+		if(scanURL && zapDefaultDir != null && !zapDefaultDir.isEmpty()) {
+			cmd.add(CMD_LINE_DIR);
+			cmd.add(zapDefaultDir);
 		}
 		
 		// Adds command line arguments if it's provided
@@ -625,7 +632,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 					try {
 						socket.close();
 					} catch (IOException e) {
-						e.printStackTrace();
 						listener.error(ExceptionUtils.getStackTrace(e));
 					}
 				}
@@ -648,9 +654,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param format the report format file
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @return all alerts from ZAProxy in a string
+	 * @throws IOException 
 	 * @throws Exception
 	 */
-	private String getAllAlerts(final String format, BuildListener listener) throws Exception {
+	private String getAllAlerts(final String format, BuildListener listener) throws IOException {
 		URL url;
 		String result = "";
 		Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(zapProxyHost, zapProxyPort));
@@ -701,6 +708,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	public boolean executeZAP(FilePath workspace, BuildListener listener) {
 		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
+		boolean buildSuccess = true;
 		
 		// Try/catch here because I need to stopZAP in finally block and for that,
 		// I need the zapClientAPI created in this method
@@ -775,19 +783,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
 		} catch (Exception e) {
-			e.printStackTrace();
 			listener.error(ExceptionUtils.getStackTrace(e));
-			return false;
+			buildSuccess = false;
 		} finally {
 			try {
 				stopZAP(zapClientAPI, listener);
 			} catch (ClientApiException e) {
-				e.printStackTrace();
 				listener.error(ExceptionUtils.getStackTrace(e));
-				return false;
+				buildSuccess = false;
 			}
 		}
-		return true;
+		return buildSuccess;
 	}
 	
 	/**
@@ -834,7 +840,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void scanURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
 			throws ClientApiException, InterruptedException {
-		if(chosenPolicy == null || chosenPolicy.equals("")) {
+		if(chosenPolicy == null || chosenPolicy.isEmpty()) {
 			listener.getLogger().println("Scan url [" + url + "] with the policy by default");		
 		} else {
 			listener.getLogger().println("Scan url [" + url + "] with the following policy ["
@@ -865,6 +871,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private void stopZAP(ClientApi zapClientAPI, BuildListener listener) throws ClientApiException {
 		if (zapClientAPI != null) {
 			listener.getLogger().println("Shutdown ZAProxy");
+			//throw new ClientApiException("Exception lancee dans stopZAP");
 			zapClientAPI.core.shutdown(API_KEY);
 		} else {
 			listener.getLogger().println("No shutdown of ZAP (zapClientAPI==null)");
@@ -942,7 +949,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		public FormValidation doCheckFilenameReports(@QueryParameter("filenameReports") final String filenameReports) {
 			if(filenameReports.isEmpty())
 				return FormValidation.error("Field is required");
-			if(!FilenameUtils.getExtension(filenameReports).equals(""))
+			if(!FilenameUtils.getExtension(filenameReports).isEmpty())
 				return FormValidation.warning("A file extension is not necessary.");
 			return FormValidation.ok();
 		}
@@ -984,7 +991,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			if(!filenameLoadSession.isEmpty())
 				return FormValidation.warning("A session is loaded, so it's not necessary to save session");
 			
-			if(!FilenameUtils.getExtension(filenameSaveSession).equals(""))
+			if(!FilenameUtils.getExtension(filenameSaveSession).isEmpty())
 				return FormValidation.warning("A file extension is not necessary. A default file extension will be added (.session)");
 			return FormValidation.ok();
 		}
@@ -1030,11 +1037,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			// No workspace before the first build, so workspace is null
 			if(workspace != null) {
 				File[] listFiles = {};
-				try {
-					listFiles = workspace.act(new PolicyFileCallable(zapDefaultDir));
-				} catch (Exception e) {
-					e.printStackTrace();
-				} 
+					try {
+						listFiles = workspace.act(new PolicyFileCallable(zapDefaultDir));
+					} catch (IOException e) {
+						// No listener because it's not during a build but it's on the job config page
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						// No listener because it's not during a build but it's on the job config page
+						e.printStackTrace();
+					}
 					
 				items.add(""); // To not load a policy file, add a blank choice
 				
@@ -1083,7 +1094,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 					}
 	
 					@Override
-					public void checkRoles(RoleChecker checker) throws SecurityException {}
+					public void checkRoles(RoleChecker checker) throws SecurityException {
+						// Nothing to do
+					}
 				});
 			
 				items.add(""); // To not load a session, add a blank choice
@@ -1149,7 +1162,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		}
 	
 		@Override
-		public void checkRoles(RoleChecker checker) throws SecurityException {}
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// Nothing to do
+		}
 	}
 	
 	/**
@@ -1178,6 +1193,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		}
 		
 		@Override
-		public void checkRoles(RoleChecker checker) throws SecurityException {}
+		public void checkRoles(RoleChecker checker) throws SecurityException {
+			// Nothing to do
+		}
 	}
 }
