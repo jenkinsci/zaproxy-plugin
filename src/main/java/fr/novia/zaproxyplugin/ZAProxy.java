@@ -24,10 +24,11 @@
 
 package fr.novia.zaproxyplugin;
 
+import org.zaproxy.zap.extension.pscan.ExtensionPassiveScan;
+
 import fr.novia.zaproxyplugin.report.ZAPreport;
 import fr.novia.zaproxyplugin.report.ZAPreportCollection;
 import hudson.EnvVars;
-import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
@@ -40,6 +41,7 @@ import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.JDK;
 import hudson.model.Node;
+import hudson.Extension;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -57,11 +59,14 @@ import org.apache.tools.ant.BuildException;
 import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.parosproxy.paros.control.Control;
+import org.parosproxy.paros.core.scanner.Plugin;
 //import org.parosproxy.paros.CommandLine;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
+import org.zaproxy.zap.extension.ascan.ExtensionActiveScan;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,7 +76,6 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -81,7 +85,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -503,7 +506,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Command to start ZAProxy with parameters
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapPathWithProgName.getRemote());
-		cmd.add(CMD_LINE_DAEMON);
+		// TODO enlever comm
+		//cmd.add(CMD_LINE_DAEMON);
 		cmd.add(CMD_LINE_HOST);
 		cmd.add(zapProxyHost);
 		cmd.add(CMD_LINE_PORT);
@@ -710,6 +714,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
 		boolean buildSuccess = true;
 		
+		
+		
 		// Try/catch here because I need to stopZAP in finally block and for that,
 		// I need the zapClientAPI created in this method
 		try {
@@ -780,8 +786,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				listener.getLogger().println("Skip saveSession");
 			}
 			
+			// TODO tester
+			displayAllActivesRules(listener);
+			
 			listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
+			
 		} catch (Exception e) {
 			listener.error(ExceptionUtils.getStackTrace(e));
 			buildSuccess = false;
@@ -794,6 +804,31 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 		return buildSuccess;
+	}
+	
+	private void displayAllActivesRules(BuildListener listener){
+		
+		listener.getLogger().println("before extAscan");
+		
+		listener.getLogger().println("Control.getSingleton() = " + Control.getSingleton());
+		listener.getLogger().println("Control.getSingleton().getExtensionLoader() = "
+					+ Control.getSingleton().getExtensionLoader());
+		
+		
+		
+		org.parosproxy.paros.extension.Extension extAscan = Control.getSingleton().
+				getExtensionLoader().getExtension(ExtensionActiveScan.NAME);
+		
+		org.parosproxy.paros.extension.Extension extPscan = Control.getSingleton().
+		getExtensionLoader().getExtension(ExtensionPassiveScan.NAME);
+		
+		listener.getLogger().println("after extAscan = " + extAscan);
+
+		List<Plugin> plugins = ((ExtensionActiveScan) extAscan).getPolicyManager().getDefaultScanPolicy().getPluginFactory().getAllPlugin();
+		listener.getLogger().println("***** List of all active rules ***** plugins = " + plugins);
+		for(Plugin p : plugins){
+			listener.getLogger().println("p.getId() = " + p.getId());
+		}
 	}
 	
 	/**
