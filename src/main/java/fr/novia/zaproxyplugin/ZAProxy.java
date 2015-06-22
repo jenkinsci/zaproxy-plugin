@@ -787,7 +787,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 			
 			// TODO tester
-			displayAllActivesRules(listener);
+			//displayAllActivesRules(listener);
 			
 			listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));

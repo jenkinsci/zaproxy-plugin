@@ -32,16 +32,11 @@
 				</developer>
 		</developers>
 		<scm>
-				<!-- <connection>scm:git:ssh://github.com/jenkinsci/zaproxy-plugin.git</connection>
-				<developerConnection>scm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
-				<url>http://github.com/jenkinsci/zaproxy-plugin</url>
-				<tag>zaproxy-jenkins-1.0</tag>
-				-->
 				<connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
 				<developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
-		<tag>HEAD</tag>
-</scm>
+				<tag>HEAD</tag>
+		</scm>
 				
 		<repositories>
 				<repository>
@@ -87,12 +82,39 @@
 				<!-- For zap core
 					TODO Import when it will contain the correct API version
 					and so remove the zap-api lib -->
-				<!-- 
+				
 				<dependency>
 					<groupId>org.zaproxy</groupId>
 					<artifactId>zap</artifactId>
 					<version>2.4.0</version>
 				</dependency>
-				-->
+				<dependency>
+					<groupId>commons-configuration</groupId>
+					<artifactId>commons-configuration</artifactId>
+					<version>1.10</version>
+				</dependency>
+
+				
 		</dependencies>
+	<!-- <build>
+		<plugins>
+		<plugin>
+		<groupId>org.owasp</groupId>
+		<artifactId>dependency-check-maven</artifactId>
+		<version>1.2.11</version>
+		<configuration>
+				<format>ALL</format>
+				<outputDirectory>D:\.jenkins\jobs\test_sonar\workspace\reportOWASP</outputDirectory>
+		</configuration>
+		<executions>
+				<execution>
+				<goals>
+						<goal>check</goal>
+				</goals>
+				</execution>
+		</executions>
+		</plugin>
+		</plugins>
+	</build>
+	-->
 </project>
