@@ -506,8 +506,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Command to start ZAProxy with parameters
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapPathWithProgName.getRemote());
-		// TODO enlever comm
-		//cmd.add(CMD_LINE_DAEMON);
+		cmd.add(CMD_LINE_DAEMON);
 		cmd.add(CMD_LINE_HOST);
 		cmd.add(zapProxyHost);
 		cmd.add(CMD_LINE_PORT);
@@ -786,9 +785,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				listener.getLogger().println("Skip saveSession");
 			}
 			
-			// TODO tester
-			//displayAllActivesRules(listener);
-			
 			listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
 			
@@ -804,31 +800,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 		return buildSuccess;
-	}
-	
-	private void displayAllActivesRules(BuildListener listener){
-		
-		listener.getLogger().println("before extAscan");
-		
-		listener.getLogger().println("Control.getSingleton() = " + Control.getSingleton());
-		listener.getLogger().println("Control.getSingleton().getExtensionLoader() = "
-					+ Control.getSingleton().getExtensionLoader());
-		
-		
-		
-		org.parosproxy.paros.extension.Extension extAscan = Control.getSingleton().
-				getExtensionLoader().getExtension(ExtensionActiveScan.NAME);
-		
-		org.parosproxy.paros.extension.Extension extPscan = Control.getSingleton().
-		getExtensionLoader().getExtension(ExtensionPassiveScan.NAME);
-		
-		listener.getLogger().println("after extAscan = " + extAscan);
-
-		List<Plugin> plugins = ((ExtensionActiveScan) extAscan).getPolicyManager().getDefaultScanPolicy().getPluginFactory().getAllPlugin();
-		listener.getLogger().println("***** List of all active rules ***** plugins = " + plugins);
-		for(Plugin p : plugins){
-			listener.getLogger().println("p.getId() = " + p.getId());
-		}
 	}
 	
 	/**

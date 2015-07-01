@@ -37,11 +37,11 @@ SOFTWARE.
 	so it should be straightforward to find them.
 	-->
 	<f:section title="ZAProxy">
-		<f:entry title="${%ZAProxy Host}" field="zapProxyHost">
+		<f:entry title="${%ZAProxy Default Host}" field="zapProxyDefaultHost">
 			<f:textbox default="localhost" clazz="required" />
 		</f:entry>
 
-		<f:entry title="${%ZAProxy Port}" field="zapProxyPort">
+		<f:entry title="${%ZAProxy Default Port}" field="zapProxyDefaultPort">
 			<f:number default="8090" clazz="required positive-number" />
 		</f:entry>
 	</f:section>

@@ -35,13 +35,16 @@ SOFTWARE.
 			${it.workspace}
 		</f:entry>
 		
-		<f:entry title="${%ZAProxy host}">
-			${descriptor.zapProxyHost} (${%Configured in admin mode})
+		<f:entry title="${%Override ZAProxy host}" field="zapProxyHost"
+		description="Default Host is : ${descriptor.zapProxyDefaultHost} (${%Configured in admin mode})">
+			<f:textbox clazz="required" default="${descriptor.zapProxyDefaultHost}" />
 		</f:entry>
 		
-		<f:entry title="${%ZAProxy port}">
-			${descriptor.zapProxyPort} (${%Configured in admin mode})
+		<f:entry title="${%Override ZAProxy port}" field="zapProxyPort"
+		description="Default Port is : ${descriptor.zapProxyDefaultPort} (${%Configured in admin mode})">
+			<f:number default="${descriptor.zapProxyDefaultPort}" clazz="required positive-number" />
 		</f:entry>
+		
 	</f:section>
 		
 	<f:section title="${%Startup}" />

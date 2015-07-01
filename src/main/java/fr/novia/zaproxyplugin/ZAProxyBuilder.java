@@ -70,13 +70,21 @@ public class ZAProxyBuilder extends Builder {
 	/** The objet to start and call ZAProxy methods */
 	private final ZAProxy zaproxy;
 	
+	/** Host configured when ZAProxy is used as proxy */
+	private final String zapProxyHost;
+	
+	/** Port configured when ZAProxy is used as proxy */
+	private final int zapProxyPort;
+	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public ZAProxyBuilder(boolean startZAPFirst, ZAProxy zaproxy) {
+	public ZAProxyBuilder(boolean startZAPFirst, String zapProxyHost, int zapProxyPort, ZAProxy zaproxy) {
 		this.startZAPFirst = startZAPFirst;
 		this.zaproxy = zaproxy;
-		this.zaproxy.setZapProxyHost(getDescriptor().getZapProxyHost());
-		this.zaproxy.setZapProxyPort(getDescriptor().getZapProxyPort());
+		this.zapProxyHost = zapProxyHost;
+		this.zapProxyPort = zapProxyPort;
+		this.zaproxy.setZapProxyHost(zapProxyHost);
+		this.zaproxy.setZapProxyPort(zapProxyPort);
 	}
 
 	/*
@@ -90,6 +98,14 @@ public class ZAProxyBuilder extends Builder {
 		return zaproxy;
 	}
 	
+	public String getZapProxyHost() {
+		return zapProxyHost;
+	}
+
+	public int getZapProxyPort() {
+		return zapProxyPort;
+	}
+
 	// Overridden for better type safety.
 	// If your plugin doesn't really define any property on Descriptor,
 	// you don't have to do this.
@@ -238,8 +254,8 @@ public class ZAProxyBuilder extends Builder {
 		 * <p>
 		 * If you don't want fields to be persisted, use <tt>transient</tt>.
 		 */
-		private String zapProxyHost;
-		private int zapProxyPort;
+		private String zapProxyDefaultHost;
+		private int zapProxyDefaultPort;
 
 		/**
 		 * In order to load the persisted global configuration, you have to
@@ -267,21 +283,22 @@ public class ZAProxyBuilder extends Builder {
 		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
 			// To persist global configuration information,
 			// set that to properties and call save().
-			zapProxyHost = formData.getString("zapProxyHost");
-			zapProxyPort = formData.getInt("zapProxyPort");
+			zapProxyDefaultHost = formData.getString("zapProxyDefaultHost");
+			zapProxyDefaultPort = formData.getInt("zapProxyDefaultPort");
 			// ^Can also use req.bindJSON(this, formData);
 			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
 			save();
 			return super.configure(req,formData);
 		}
 
-		public String getZapProxyHost() {
-			return zapProxyHost;
+		public String getZapProxyDefaultHost() {
+			return zapProxyDefaultHost;
 		}
 
-		public int getZapProxyPort() {
-			return zapProxyPort;
+		public int getZapProxyDefaultPort() {
+			return zapProxyDefaultPort;
 		}
+
 	}
 	
 	/**
