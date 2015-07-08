@@ -31,6 +31,11 @@
 						<name>Ludovic Roucoux</name>
 						<email>ludovic.roucoux@gmail.com</email>
 				</developer>
+				<developer>
+						<id>johannol</id>
+						<name>Johann Ollivier-Lapeyre</name>
+						<email>johann.ollivierlapeyre@gmail.com</email>
+				</developer>
 		</developers>
 		<scm>
 				<connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
