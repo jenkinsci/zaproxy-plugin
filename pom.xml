@@ -12,7 +12,7 @@
 		</parent>
 		<groupId>fr.novia</groupId>
 		<artifactId>zaproxy</artifactId>
-		<version>1.1.2</version>
+		<version>1.1.3-SNAPSHOT</version>
 		<packaging>hpi</packaging>
 
 		<name>ZAProxy Plugin</name>
@@ -37,10 +37,10 @@
 				</developer>
 		</developers>
 		<scm>
-				<connection>scm:git:git@github.com:jenkinsci/zaproxy-plugin.git</connection>
-				<developerConnection>scm:git:git@github.com:jenkinsci/zaproxy-plugin.git</developerConnection>
+				<connection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</connection>
+				<developerConnection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
-				<tag>zaproxy-1.1.2</tag>
+				<tag>zaproxy-1.1.3</tag>
 		</scm>
 
 		<repositories>
