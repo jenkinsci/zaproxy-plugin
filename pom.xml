@@ -38,7 +38,7 @@
 		</developers>
 		<scm>
 				<connection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</connection>
-				<developerConnection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</developerConnection>
+				<developerConnection>scm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
 				<url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
 				<tag>zaproxy-1.1.4</tag>
 		</scm>
