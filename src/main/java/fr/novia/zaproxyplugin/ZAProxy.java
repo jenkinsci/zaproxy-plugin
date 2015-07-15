@@ -24,11 +24,10 @@
 
 package fr.novia.zaproxyplugin;
 
-import org.zaproxy.zap.extension.pscan.ExtensionPassiveScan;
-
 import fr.novia.zaproxyplugin.report.ZAPreport;
 import fr.novia.zaproxyplugin.report.ZAPreportCollection;
 import hudson.EnvVars;
+import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
@@ -41,7 +40,6 @@ import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.JDK;
 import hudson.model.Node;
-import hudson.Extension;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.slaves.SlaveComputer;
@@ -49,24 +47,6 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import jenkins.model.Jenkins;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.tools.ant.BuildException;
-import org.jenkinsci.remoting.RoleChecker;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.parosproxy.paros.control.Control;
-import org.parosproxy.paros.core.scanner.Plugin;
-//import org.parosproxy.paros.CommandLine;
-import org.zaproxy.clientapi.core.ApiResponse;
-import org.zaproxy.clientapi.core.ApiResponseElement;
-import org.zaproxy.clientapi.core.ClientApi;
-import org.zaproxy.clientapi.core.ClientApiException;
-import org.zaproxy.zap.extension.ascan.ExtensionActiveScan;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -87,6 +67,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import jenkins.model.Jenkins;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.tools.ant.BuildException;
+import org.jenkinsci.remoting.RoleChecker;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.zaproxy.clientapi.core.ApiResponse;
+import org.zaproxy.clientapi.core.ApiResponseElement;
+import org.zaproxy.clientapi.core.ClientApi;
+import org.zaproxy.clientapi.core.ClientApiException;
+//import org.parosproxy.paros.CommandLine;
 
 /**
  * Contains methods to start and execute ZAProxy.
