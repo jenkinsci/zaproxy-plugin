@@ -81,7 +81,15 @@ SOFTWARE.
 			<f:textbox clazz="required" />
 		</f:entry>
 		
-		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" >
+			<f:entry>
+				<table width="100%">
+					<f:optionalBlock title="${%Spider URL as User}" field="useUserForSpider" inline="true" >
+						<f:property field="spiderUser" />
+					</f:optionalBlock>	
+				</table>
+			</f:entry>
+		</f:optionalBlock>		
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
 		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
@@ -94,6 +102,10 @@ SOFTWARE.
 					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
 						<f:select />
 					</f:entry>
+					
+					<f:optionalBlock title="${%Scan URL as User}" field="useUserForScan" inline="true" >
+						<f:property field="scanUser" />
+					</f:optionalBlock>
 				</table>
 			</f:entry>
 		</f:optionalBlock>		

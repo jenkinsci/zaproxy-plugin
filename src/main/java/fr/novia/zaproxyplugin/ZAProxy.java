@@ -182,6 +182,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
 	
+	
+	private final boolean useUserForSpider;
+	private final boolean useUserForScan;
+	private final ZAPuser spiderUser;
+	private final ZAPuser scanUser;
+	
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
@@ -189,7 +195,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk) {
+			List<ZAPcmdLine> cmdLinesZAP, String jdk,
+			boolean useUserForSpider, boolean useUserForScan, ZAPuser spiderUser, ZAPuser scanUser) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -209,6 +216,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
 		
 		this.jdk = jdk;
+		this.useUserForSpider = useUserForSpider;
+		this.useUserForScan = useUserForScan;
+		this.spiderUser = spiderUser;
+		this.scanUser = scanUser;
 		System.out.println(this.toString());
 	}
 	
@@ -233,6 +244,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		s += "zapProxyHost ["+zapProxyHost+"]\n";
 		s += "zapProxyPort ["+zapProxyPort+"]\n";
+		
+		s += "spiderUser ["+spiderUser+"]\n";
 		
 		s+= "jdk ["+jdk+"]";
 		
@@ -331,6 +344,22 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public String getJdk() {
 		return jdk;
+	}
+	
+	public boolean isUseUserForSpider() {
+		return useUserForSpider;
+	}
+
+	public boolean isUseUserForScan() {
+		return useUserForScan;
+	}
+
+	public ZAPuser getSpiderUser() {
+		return spiderUser;
+	}
+	
+	public ZAPuser getScanUser() {
+		return scanUser;
 	}
 
 	/**
@@ -710,8 +739,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
 		boolean buildSuccess = true;
 		
-		
-		
 		// Try/catch here because I need to stopZAP in finally block and for that,
 		// I need the zapClientAPI created in this method
 		try {
@@ -734,6 +761,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			if (spiderURL) {
 				listener.getLogger().println("Spider the site [" + targetURL + "]");
 				spiderURL(targetURL, listener, zapClientAPI);
+				
 			} else {
 				listener.getLogger().println("Skip spidering the site [" + targetURL + "]");
 			}
@@ -820,8 +848,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
 			throws ClientApiException, InterruptedException {
-		// Method signature : scan(String key, String url, String maxChildren)
-		zapClientAPI.spider.scan(API_KEY, url, "");
+		if(useUserForSpider) {
+			String contextId = String.valueOf(spiderUser.getContextId());
+			String userId = String.valueOf(spiderUser.getUserId());
+			String maxChildren = "-1";
+			
+			listener.getLogger().println("Spider URl as User [" + zapClientAPI.users.getUserById(contextId, userId).toString(1));
+			
+			// Method signature : scan(String key, String url, String cointextId, String userId, String maxChildren)
+			zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, maxChildren);
+		} else {
+			// Method signature : scan(String key, String url, String maxChildren)
+			zapClientAPI.spider.scan(API_KEY, url, "");
+		}
+		
 
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
@@ -850,6 +890,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 							+ chosenPolicy + "]");
 		}
 		
+		if(useUserForScan) {
+			// TODO
+		}
 		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
 		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
@@ -874,7 +917,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private void stopZAP(ClientApi zapClientAPI, BuildListener listener) throws ClientApiException {
 		if (zapClientAPI != null) {
 			listener.getLogger().println("Shutdown ZAProxy");
-			//throw new ClientApiException("Exception lancee dans stopZAP");
 			zapClientAPI.core.shutdown(API_KEY);
 		} else {
 			listener.getLogger().println("No shutdown of ZAP (zapClientAPI==null)");
