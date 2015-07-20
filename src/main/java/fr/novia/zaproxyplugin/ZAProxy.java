@@ -532,7 +532,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Command to start ZAProxy with parameters
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapPathWithProgName.getRemote());
-		cmd.add(CMD_LINE_DAEMON);
+		// TODO decommenter
+		//cmd.add(CMD_LINE_DAEMON);
 		cmd.add(CMD_LINE_HOST);
 		cmd.add(zapProxyHost);
 		cmd.add(CMD_LINE_PORT);
@@ -817,12 +818,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.error(ExceptionUtils.getStackTrace(e));
 			buildSuccess = false;
 		} finally {
-			try {
+			// TODO decommenter
+			/*try {
 				stopZAP(zapClientAPI, listener);
 			} catch (ClientApiException e) {
 				listener.error(ExceptionUtils.getStackTrace(e));
 				buildSuccess = false;
-			}
+			}*/
 		}
 		return buildSuccess;
 	}
@@ -855,8 +857,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			
 			listener.getLogger().println("Spider URl as User [" + zapClientAPI.users.getUserById(contextId, userId).toString(1));
 			
+			zapClientAPI.forcedUser.setForcedUserModeEnabled(API_KEY, true);
+			zapClientAPI.forcedUser.setForcedUser(API_KEY, contextId, userId);
+			
 			// Method signature : scan(String key, String url, String cointextId, String userId, String maxChildren)
 			zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, maxChildren);
+			// TODO the user seems to be not used by ZAProxy (open a session created by ZAProxy Jenkins, see url found and in the reponse,
+			// you must see the user logged. But it's not the case, always "Guest user"). 
 		} else {
 			// Method signature : scan(String key, String url, String maxChildren)
 			zapClientAPI.spider.scan(API_KEY, url, "");
