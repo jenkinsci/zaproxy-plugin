@@ -67,8 +67,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.net.URLEncoder;
-import java.io.UnsupportedEncodingException;
 
 import jenkins.model.Jenkins;
 
@@ -188,6 +186,39 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private final String jdk;
 
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
+	/**
+     * @deprecated
+     * This constructor dosent initilize Ajaxspider variable
+     */
+	@Deprecated
+	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
+			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
+			boolean saveReports, List<String> chosenFormats, String filenameReports,
+			boolean saveSession, String filenameSaveSession,
+			String zapDefaultDir, String chosenPolicy,
+			List<ZAPcmdLine> cmdLinesZAP, String jdk) {
+		
+		this.autoInstall = autoInstall;
+		this.toolUsed = toolUsed;
+		this.zapHome = zapHome;
+		this.timeoutInSec = timeoutInSec;
+		this.filenameLoadSession = filenameLoadSession;
+		this.targetURL = targetURL;
+		this.spiderURL = spiderURL;
+		this.scanURL = scanURL;
+		this.saveReports = saveReports;
+		this.chosenFormats = chosenFormats != null ? new ArrayList<String>(chosenFormats) : new ArrayList<String>();
+		this.filenameReports = filenameReports;
+		this.saveSession = saveSession;
+		this.filenameSaveSession = filenameSaveSession;
+		this.zapDefaultDir = zapDefaultDir;
+		this.chosenPolicy = chosenPolicy;
+		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
+		this.ajaxSpiderURL=false;
+		this.jdk = jdk;
+		System.out.println(this.toString());
+	}
+
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
 			String filenameLoadSession, String targetURL, boolean spiderURL, boolean ajaxSpiderURL, boolean scanURL,
@@ -837,6 +868,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param response the ZAP API response code
 	 * @return the String status of the ApiResponse
 	 */
+	@SuppressWarnings("unchecked")
 	private String statusToString(final ApiResponse response) {
 		return ((ApiResponseElement)response).getValue();
 	}
@@ -866,7 +898,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts
-	 *
 	 * @param url the url to investigate
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
