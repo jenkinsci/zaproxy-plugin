@@ -82,6 +82,8 @@ SOFTWARE.
 		</f:entry>
 		
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+
+		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
 		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >

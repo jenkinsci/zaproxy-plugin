@@ -67,6 +67,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.net.URLEncoder;
+import java.io.UnsupportedEncodingException;
 
 import jenkins.model.Jenkins;
 
@@ -147,6 +149,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** Realize a url spider or not by ZAProxy */
 	private final boolean spiderURL;
+
+	/** Realize a url AjaxSpider or not by ZAProxy */
+	private final boolean ajaxSpiderURL;
 	
 	/** Realize a url scan or not by ZAProxy */
 	private final boolean scanURL;
@@ -181,11 +186,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
-	
+
 	// Fields in fr/novia/zaproxyplugin/ZAProxy/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
+			String filenameLoadSession, String targetURL, boolean spiderURL, boolean ajaxSpiderURL, boolean scanURL,
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
@@ -198,6 +203,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.filenameLoadSession = filenameLoadSession;
 		this.targetURL = targetURL;
 		this.spiderURL = spiderURL;
+		this.ajaxSpiderURL=ajaxSpiderURL;
 		this.scanURL = scanURL;
 		this.saveReports = saveReports;
 		this.chosenFormats = chosenFormats != null ? new ArrayList<String>(chosenFormats) : new ArrayList<String>();
@@ -222,6 +228,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "filenameLoadSession ["+filenameLoadSession+"]\n";
 		s += "targetURL ["+targetURL+"]\n";
 		s += "spiderURL ["+spiderURL+"]\n";
+		s += "ajaxSpiderURL ["+ajaxSpiderURL+"]\n";
 		s += "scanURL ["+scanURL+"]\n";
 		s += "saveReports ["+saveReports+"]\n";
 		s += "chosenFormats ["+chosenFormats+"]\n";
@@ -276,6 +283,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public boolean getSpiderURL() {
 		return spiderURL;
+	}
+
+	public boolean getAjaxSpiderURL() {
+		return ajaxSpiderURL;
 	}
 
 	public boolean getScanURL() {
@@ -739,6 +750,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 
 			/* ======================================================= 
+			 * |                AJAX SPIDER URL                       |
+			 * ======================================================= 
+			 */
+			if (ajaxSpiderURL) {
+				listener.getLogger().println("Ajax Spider the site [" + targetURL + "]");
+				ajaxSpiderURL(targetURL, listener, zapClientAPI);
+			} else {
+				listener.getLogger().println("Skip Ajax spidering the site [" + targetURL + "]");
+			}
+
+			/* ======================================================= 
 			 * |                  SCAN URL                            |
 			 * ======================================================= 
 			 */
@@ -808,6 +830,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private int statusToInt(final ApiResponse response) {
 		return Integer.parseInt(((ApiResponseElement)response).getValue());
 	}
+
+	/**
+	 * Converts the ZAP API status response to an String
+	 *
+	 * @param response the ZAP API response code
+	 * @return the String status of the ApiResponse
+	 */
+	private String statusToString(final ApiResponse response) {
+		return ((ApiResponseElement)response).getValue();
+	}
 	
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts
@@ -830,6 +862,31 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
 			Thread.sleep(1000);
 		}
+	}
+
+	/**
+	 * Search for all links and pages on the URL and raised passives alerts
+	 *
+	 * @param url the url to investigate
+	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param zapClientAPI the client API to use ZAP API methods
+	 * @throws ClientApiException
+	 * @throws InterruptedException 
+	 */
+	private void ajaxSpiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
+			throws ClientApiException, InterruptedException{
+
+
+		//Method signature : scan(String apikey,String url,String inscope)
+		zapClientAPI.ajaxSpider.scan(API_KEY, url, "false");
+ 		
+ 		// Wait for complete spidering (equal to status complete)
+		// Method signature : status(String scanId)
+		while ("running".equalsIgnoreCase(statusToString(zapClientAPI.ajaxSpider.status()))) { 
+		    listener.getLogger().println("Status spider = " + statusToString(zapClientAPI.ajaxSpider.status()));
+			listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+			Thread.sleep(2500);
+		} 
 	}
 	
 	/**
