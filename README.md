@@ -8,11 +8,3 @@ With this plugin, you can spider and scan a target URL, save alerts security rep
 This plugin uses an external plugin to install ZAProxy on the machine with Jenkins (like Custom Tools Plugin) or ZAProxy must be already install before run builds.
 
 For more informations, visit https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin.
-
-# zapauthentication
-Jenkins zaproxy plugin , modify for use authentication
-
-Recomend use <a href= 'https://github.com/zaproxy/zaproxy/wiki/Downloads#zap-weekly'>ZAP weekly release</a> or Build From Source 
-
-** Fully tested with source build
-
