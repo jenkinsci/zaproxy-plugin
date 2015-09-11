@@ -1095,6 +1095,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/**
 	 * Set up all authentication details
+	 * @author thilina27
 	 * @param username user name to be used in authentication
 	 * @param password password for the authentication user
 	 * @param usernameParameter parameter define in passing username
@@ -1146,6 +1147,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts
+	 * @author thilina27
 	 * @param url the url to investigate
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
@@ -1172,6 +1174,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts
+	 * @author thilina27
 	 * @param url the url to investigate
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
