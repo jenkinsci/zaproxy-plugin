@@ -35,6 +35,11 @@
 						<name>Johann Ollivier-Lapeyre</name>
 						<email>johann.ollivierlapeyre@gmail.com</email>
 				</developer>
+				<developer>
+						<id>thilina27</id>
+						<name>Thilina Madhusanka</name>
+						<email>madhusanka.thilina@gmail.com</email>
+				</developer>
 		</developers>
 		<scm>
 				<!--<connection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</connection>
