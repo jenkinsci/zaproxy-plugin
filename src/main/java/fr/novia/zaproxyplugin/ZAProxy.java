@@ -309,7 +309,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "usernameParameter ["+usernameParameter+"]\n";
 		s += "username ["+username+"]\n";
 		s += "passwordParameter ["+passwordParameter+"]\n";
-		s += "password ["+password+"]\n";
 		s += "loginUrl ["+loginUrl+"]\n";
 		s += "loggedInIndicator ["+loggedInIndicator+"]\n";
 		s += "ajaxSpiderURL ["+ajaxSpiderURL+"]\n";
@@ -431,10 +430,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	public String  getusername() {
 		return username;
-	}
-
-	public String  getpassword() {
-		return password;
 	}
 
 	public String getLoginUrl() {
@@ -1085,7 +1080,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		zapClientAPI.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, authCon);
 
-		listener.getLogger().println("New user added. username :" +username+ "password :" +password);
+		listener.getLogger().println("New user added. username :" +username);
 		
 		zapClientAPI.users.setUserEnabled(API_KEY, contextId,userIdTemp,"true");
 		listener.getLogger().println("User : "+username+" is now Enabled");

@@ -88,7 +88,7 @@ SOFTWARE.
 		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
 		<f:entry>
 				<table width="100%">
-					<f:entry title="${%Loggin URL}" field="loginUrl">
+					<f:entry title="${%Login URL}" field="loginUrl">
 						<f:textbox clazz="required" />
 					</f:entry>
 					<f:entry title="${%Logged in indicator}" field="loggedInIndicator">
