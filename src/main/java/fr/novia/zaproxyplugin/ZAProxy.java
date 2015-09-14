@@ -984,7 +984,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @return the context ID of the context
 	 */
 	@SuppressWarnings("unchecked")
-	private String extractontextId(ApiResponse response) {
+	private String extractContextId(ApiResponse response) {
 		return ((ApiResponseElement) response).getValue();
 	}
 
@@ -1005,7 +1005,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 		//Create new context
 		//method signature : newContext(String apikey,String contextname) throws ClientApiException
-		contextIdTemp=extractontextId(zapClientAPI.context.newContext(API_KEY,contextName));
+		contextIdTemp=extractContextId(zapClientAPI.context.newContext(API_KEY,contextName));
 
 		//add url to the context
 		//method signature : includeInContext(String apikey, String contextname, String regex) 
