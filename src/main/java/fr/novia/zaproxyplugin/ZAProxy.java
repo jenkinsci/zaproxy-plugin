@@ -432,6 +432,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return username;
 	}
 
+	public String getpassword() {
+		return password;
+	}
+
 	public String getLoginUrl() {
 		return loginUrl;
 	}
