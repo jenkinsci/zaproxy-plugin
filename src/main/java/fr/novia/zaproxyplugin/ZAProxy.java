@@ -109,6 +109,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public static final String CMD_LINE_HOST = "-host";
 	public static final String CMD_LINE_PORT = "-port";
 	public static final String CMD_LINE_DAEMON = "-daemon";
+	private static final String CMD_LINE_CONFIG = "-config";
+	private static final String CMD_LINE_API_KEY = "api.key";
 	
 	// TODO Do import when zap-2.4.0.jar will contain the correct API version
 //	public static final String CMD_LINE_DIR = CommandLine.DIR;
@@ -119,6 +121,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	private static final String ZAP_PROG_NAME_BAT = "zap.bat";
 	private static final String ZAP_PROG_NAME_SH = "zap.sh";
+
+
 	
 	/** Host configured when ZAProxy is used as proxy */
 	private String zapProxyHost;
@@ -169,7 +173,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** loggin url**/
 	private final String loginUrl;
 
-	/** logged in indiacation*/
+	/** logged in indication*/
 	private final String loggedInIndicator;
 
 	/** Id of the newly created context*/
@@ -629,6 +633,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		cmd.add(zapProxyHost);
 		cmd.add(CMD_LINE_PORT);
 		cmd.add(String.valueOf(zapProxyPort));
+		cmd.add(CMD_LINE_CONFIG);
+		cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 		
 		// Set the default directory used by ZAP if it's defined and if a scan is provided
 		if(scanURL && zapDefaultDir != null && !zapDefaultDir.isEmpty()) {
@@ -1132,7 +1138,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
 			throws ClientApiException, InterruptedException {
-		// Method signature : scan(String key, String url, String maxChildren)
+		// Method signature : scan(String key, String url, String maxChildren, String recurse)
 		zapClientAPI.spider.scan(API_KEY, url, "");
 
 		// Wait for complete spidering (equal to 100)
