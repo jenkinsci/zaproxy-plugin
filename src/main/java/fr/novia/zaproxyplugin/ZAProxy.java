@@ -1139,7 +1139,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
 			throws ClientApiException, InterruptedException {
 		// Method signature : scan(String key, String url, String maxChildren, String recurse)
-		zapClientAPI.spider.scan(API_KEY, url, "");
+		zapClientAPI.spider.scan(API_KEY, url, "", "");
 
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
@@ -1166,7 +1166,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		
 		// Start spider as user
-		zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, "0");
+		zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, "0", "");
 		
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
