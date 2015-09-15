@@ -84,6 +84,33 @@ SOFTWARE.
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
 
 		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
+
+		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
+		<f:entry>
+				<table width="100%">
+					<f:entry title="${%Login URL}" field="loginUrl">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%Logged in indicator}" field="loggedInIndicator">
+						<f:textbox clazz="required" />
+					</f:entry>
+
+					<f:entry title="${%POST Username Parameter}" field="usernameParameter">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%POST password parameter}" field="passwordParameter">
+						<f:textbox clazz="required" />
+					</f:entry>					
+				
+					<f:entry title="${%Username}" field="username">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%Password}" field="password">
+						<f:password clazz="required" />
+					</f:entry>					
+				</table>
+			</f:entry>
+		</f:optionalBlock>
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
 		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
