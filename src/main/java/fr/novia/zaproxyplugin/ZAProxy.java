@@ -219,6 +219,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
 
+	/** Realize if to append build number to report name*/
+	private final boolean appendBuildNumber;
+	/** Build number to append to report name*/
+	private int buildNumber;
 	/**
      * @deprecated
      * Old constructor 
@@ -258,6 +262,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.loginUrl="";
 		this.loggedInIndicator="";
 
+		this.appendBuildNumber=false;
+
 		System.out.println(this.toString());
 	}
 
@@ -267,7 +273,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean scanURL, boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String loginUrl, String loggedInIndicator) {
+			String passwordParameter, String loginUrl, String loggedInIndicator, boolean appendBuildNumber) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -296,6 +302,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.loggedInIndicator=loggedInIndicator;
 
 		this.jdk = jdk;
+
+		this.appendBuildNumber=appendBuildNumber;
+
 		System.out.println(this.toString());
 	}
 	
@@ -446,6 +455,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public String getLoggedInIndicator() {
 		return loggedInIndicator;
+	}
+
+	public boolean getappendBuildNumber() {
+		return appendBuildNumber;
 	}
 	/**
 	 * Gets the JDK that this Sonar builder is configured with, or null.
@@ -664,6 +677,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		// Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely
 		build.getWorkspace().act(new WaitZAProxyInitCallable(this, listener));
+
+		//inialize build number
+		this.buildNumber=build.getNumber() ;
 	}
 	
 	/**
@@ -820,7 +836,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void saveReport(ZAPreport reportFormat, BuildListener listener, FilePath workspace, 
 			ClientApi clientApi) throws IOException, ClientApiException {
-		final String fullFileName = filenameReports + "." + reportFormat.getFormat();
+
+		String fileName;
+		//append build number to report if needed
+		if(appendBuildNumber) {
+			fileName = filenameReports + Integer.toString(buildNumber) +"." + reportFormat.getFormat();			
+		}
+		else {
+			fileName = filenameReports + "." + reportFormat.getFormat();	
+		}
+
+		final String fullFileName=fileName;
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
 		FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
 		listener.getLogger().println("File ["+ reportsFile.getAbsolutePath() +"] saved");

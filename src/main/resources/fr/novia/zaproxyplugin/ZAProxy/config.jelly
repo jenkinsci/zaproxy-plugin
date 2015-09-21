@@ -150,6 +150,7 @@ SOFTWARE.
 					</f:entry>
 				</table>
 			</f:entry>
+			<f:optionalBlock title="${%Apeend build number to report name}" field="appendBuildNumber" inline="true" />
 		</f:optionalBlock>
 				
 		<f:optionalBlock title="${%Save session}"  field="saveSession" inline="true">	
