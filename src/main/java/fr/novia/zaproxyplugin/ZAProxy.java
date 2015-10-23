@@ -1079,7 +1079,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// add new user and authentication details
 		// Make sure we have at least one user
 		// extract user id 
-		userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, "admin"));
+		userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, username));
 
 		// Prepare the configuration in a format similar to how URL parameters are formed. This
 		// means that any value we add for the configuration values has to be URL encoded.
