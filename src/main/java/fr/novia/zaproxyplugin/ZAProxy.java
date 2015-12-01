@@ -446,9 +446,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return password;
 	}
 
-	/**
-	 * @return the extraPostData
-	 */
 	public String getExtraPostData() {
 		return extraPostData;
 	}
@@ -955,12 +952,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.error(ExceptionUtils.getStackTrace(e));
 			buildSuccess = false;
 		} finally {
-			try {
-				stopZAP(zapClientAPI, listener);
-			} catch (ClientApiException e) {
-				listener.error(ExceptionUtils.getStackTrace(e));
-				buildSuccess = false;
-			}
+//			try {
+//				stopZAP(zapClientAPI, listener);
+//			} catch (ClientApiException e) {
+//				listener.error(ExceptionUtils.getStackTrace(e));
+//				buildSuccess = false;
+//			}
 		}
 		return buildSuccess;
 	}
@@ -1042,6 +1039,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param loggedInIdicator indication for know its logged in
 	 * @param usernameParameter parameter define in passing username
 	 * @param passwordParameter parameter that define in passing password for the user
+	 * @param extraPostData other post data than credentials
 	 * @param contextId id of the creted context
 	 * @param loginUrl login page url
 	 * @throws ClientApiException
@@ -1118,6 +1116,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param password password for the authentication user
 	 * @param usernameParameter parameter define in passing username
 	 * @param passwordParameter parameter that define in passing password for the user
+	 * @param extraPostData other post data than credentials
 	 * @param loginUrl login page url
 	 * @param loggedInIdicator indication for know its logged in
 	 * @throws ClientApiException
