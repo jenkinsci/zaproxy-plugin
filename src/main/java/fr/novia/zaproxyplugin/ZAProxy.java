@@ -157,7 +157,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Realize a url spider as user or not by ZAProxy */
 	private final boolean spiderAsUser;
 
-	/** Authentication information for conduct spider as a user*/
+	/** Authentication information for conducting spidering,ajax spidering or scan as a user*/
 	/** user name for authentication*/
 	private final String username;
 
@@ -169,7 +169,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** password post data parameter*/
 	private final String passwordParameter;
-
+	
+	/** extra post data needed to authenticate the user*/	
+	private final String extraPostData;
+	
 	/** loggin url**/
 	private final String loginUrl;
 
@@ -255,6 +258,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.password="";
 		this.usernameParameter="";
 		this.passwordParameter="";
+		this.extraPostData="";
 		this.loginUrl="";
 		this.loggedInIndicator="";
 
@@ -267,7 +271,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean scanURL, boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String loginUrl, String loggedInIndicator) {
+			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -292,6 +296,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.password=password;
 		this.usernameParameter=usernameParameter;
 		this.passwordParameter=passwordParameter;
+		this.extraPostData=extraPostData;
 		this.loginUrl=loginUrl;
 		this.loggedInIndicator=loggedInIndicator;
 
@@ -883,7 +888,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			if (spiderAsUser) {
 				listener.getLogger().println("Setting up Authentication");
 				setUpAuthentication(targetURL,listener,zapClientAPI, 
-					username,password,usernameParameter,passwordParameter,loginUrl,loggedInIndicator);
+					username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator);
 
 				listener.getLogger().println("Spider the site [" + targetURL + "] as user ["+username+"]");				
 				spiderURLAsUser(targetURL, listener, zapClientAPI, contextId, userId);
@@ -1035,11 +1040,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws UnsupportedEncodingException
 	 */
 	private void setUpAuthenticationMethod(BuildListener listener, ClientApi zapClientAPI, 
-				String loggedInIndicator, String usernameParameter, String passwordParameter,
+				String loggedInIndicator, String usernameParameter, String passwordParameter,String extraPostData,
 				String contextId, String loginUrl) 
 				throws ClientApiException, UnsupportedEncodingException{
 
-		String loginRequestData = usernameParameter+"={%username%}&"+passwordParameter+"={%password%}";
+		String loginRequestData = usernameParameter+"={%username%}&"+passwordParameter+"={%password%}&"+extraPostData;
 
 		// set authentication method 		
 		// Prepare the configuration in a format similar to how URL parameters are formed. This
@@ -1113,7 +1118,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void setUpAuthentication(final String url, BuildListener listener, ClientApi zapClientAPI, 
 				String username, String password, String usernameParameter, 
-				String passwordParameter, String loginUrl, String loggedInIndicator)
+				String passwordParameter, String extraPostData, String loginUrl, String loggedInIndicator)
 				throws ClientApiException, UnsupportedEncodingException {
 
 		//setup context
@@ -1121,7 +1126,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				
 		//set up authentication method
 		setUpAuthenticationMethod(listener,zapClientAPI,loggedInIndicator,usernameParameter,
-									passwordParameter,contextId,loginUrl);
+									passwordParameter,extraPostData,contextId,loginUrl);
 
 		//set up user
 		this.userId=setUpUser(listener,zapClientAPI,username,password,contextId);
