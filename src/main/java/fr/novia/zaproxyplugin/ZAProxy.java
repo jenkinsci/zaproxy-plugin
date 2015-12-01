@@ -318,6 +318,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "usernameParameter ["+usernameParameter+"]\n";
 		s += "username ["+username+"]\n";
 		s += "passwordParameter ["+passwordParameter+"]\n";
+		s += "extraPostData ["+extraPostData+"]\n";
 		s += "loginUrl ["+loginUrl+"]\n";
 		s += "loggedInIndicator ["+loggedInIndicator+"]\n";
 		s += "ajaxSpiderURL ["+ajaxSpiderURL+"]\n";
