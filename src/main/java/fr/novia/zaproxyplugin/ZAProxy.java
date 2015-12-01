@@ -446,6 +446,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return password;
 	}
 
+	/**
+	 * @return the extraPostData
+	 */
+	public String getExtraPostData() {
+		return extraPostData;
+	}
+
 	public String getLoginUrl() {
 		return loginUrl;
 	}
