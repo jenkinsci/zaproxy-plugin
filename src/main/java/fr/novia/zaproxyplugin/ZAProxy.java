@@ -1015,12 +1015,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.error(ExceptionUtils.getStackTrace(e));
 			buildSuccess = false;
 		} finally {
-//			try {
-//				stopZAP(zapClientAPI, listener);
-//			} catch (ClientApiException e) {
-//				listener.error(ExceptionUtils.getStackTrace(e));
-//				buildSuccess = false;
-//			}
+			try {
+				stopZAP(zapClientAPI, listener);
+			} catch (ClientApiException e) {
+				listener.error(ExceptionUtils.getStackTrace(e));
+				buildSuccess = false;
+			}
 		}
 		return buildSuccess;
 	}
