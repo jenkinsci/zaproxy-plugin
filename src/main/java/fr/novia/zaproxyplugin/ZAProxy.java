@@ -151,11 +151,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** URL to attack by ZAProxy */
 	private final String targetURL;
 	
+	/** Exclude url from scan **/
+	private final String excludedUrl;
+	
 	/** Realize a url spider or not by ZAProxy */
 	private final boolean spiderURL;
 
 	/** Realize a url spider as user or not by ZAProxy */
 	private final boolean spiderAsUser;
+	
+	/** Realize a url scan as user or not by ZAProxy */
+	private final boolean scanURLAsUser;
 
 	/** Authentication information for conducting spidering,ajax spidering or scan as a user*/
 	/** user name for authentication*/
@@ -187,6 +193,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/** Realize a url AjaxSpider or not by ZAProxy */
 	private final boolean ajaxSpiderURL;
+	
+	/** Realize a url AjaxSpider as user or not by ZAProxy */
+	private final boolean ajaxSpiderURLAsUser;
 	
 	/** Realize a url scan or not by ZAProxy */
 	private final boolean scanURL;
@@ -228,7 +237,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
      */
 	@Deprecated
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,
+			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
@@ -242,6 +251,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.targetURL = targetURL;
 		this.spiderURL = spiderURL;
 		this.scanURL = scanURL;
+		this.scanURLAsUser=scanURLAsUser;
 		this.saveReports = saveReports;
 		this.chosenFormats = chosenFormats != null ? new ArrayList<String>(chosenFormats) : new ArrayList<String>();
 		this.filenameReports = filenameReports;
@@ -251,6 +261,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
 		this.ajaxSpiderURL=false;
+		this.ajaxSpiderURLAsUser=false;
 		this.jdk = jdk;
 		
 		this.spiderAsUser=false;
@@ -261,14 +272,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.extraPostData="";
 		this.loginUrl="";
 		this.loggedInIndicator="";
+		this.excludedUrl="";
 
 		System.out.println(this.toString());
 	}
 
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL, 
-			boolean scanURL, boolean saveReports, List<String> chosenFormats, String filenameReports,
+			String filenameLoadSession, String targetURL,String excludedUrl, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
+			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
 			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator) {
@@ -279,9 +291,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.timeoutInSec = timeoutInSec;
 		this.filenameLoadSession = filenameLoadSession;
 		this.targetURL = targetURL;
+		this.excludedUrl=excludedUrl;
 		this.spiderURL = spiderURL;
 		this.ajaxSpiderURL=ajaxSpiderURL;
+		this.ajaxSpiderURLAsUser=ajaxSpiderURLAsUser;
 		this.scanURL = scanURL;
+		this.scanURLAsUser=scanURLAsUser;
 		this.saveReports = saveReports;
 		this.chosenFormats = chosenFormats != null ? new ArrayList<String>(chosenFormats) : new ArrayList<String>();
 		this.filenameReports = filenameReports;
@@ -312,7 +327,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "zapHome ["+zapHome+"]\n";
 		s += "timeoutInSec ["+timeoutInSec+"]\n";
 		s += "filenameLoadSession ["+filenameLoadSession+"]\n";
-		s += "targetURL ["+targetURL+"]\n";
+		s += "targetURL ["+targetURL+"]\n";		
+		s += "excludedUrl ["+excludedUrl+"]\n";
 		s += "spiderURL ["+spiderURL+"]\n";
 		s += "spider as user ["+spiderAsUser+"]\n";
 		s += "usernameParameter ["+usernameParameter+"]\n";
@@ -322,7 +338,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "loginUrl ["+loginUrl+"]\n";
 		s += "loggedInIndicator ["+loggedInIndicator+"]\n";
 		s += "ajaxSpiderURL ["+ajaxSpiderURL+"]\n";
+		s += "ajaxSpiderURLAsUser ["+ajaxSpiderURLAsUser+"]\n";
 		s += "scanURL ["+scanURL+"]\n";
+		s += "scanURLAsUser ["+scanURLAsUser+"]\n";
 		s += "saveReports ["+saveReports+"]\n";
 		s += "chosenFormats ["+chosenFormats+"]\n";
 		s += "filenameReports ["+filenameReports+"]\n";
@@ -373,13 +391,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public String getTargetURL() {
 		return targetURL;
 	}
-
+	public String getExcludedUrl() {
+		return excludedUrl;
+	}
+	
 	public boolean getSpiderURL() {
 		return spiderURL;
 	}
 
 	public boolean getAjaxSpiderURL() {
 		return ajaxSpiderURL;
+	}
+	
+	public boolean getAjaxSpiderURLAsUser() {
+		return ajaxSpiderURLAsUser;
 	}
 
 	public boolean getScanURL() {
@@ -428,6 +453,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public boolean getSpiderAsUser() {
 		return spiderAsUser;
+	}
+
+	/**
+	 * @return the scanURLAsUser
+	 */
+	public boolean getScanURLAsUser() {
+		return scanURLAsUser;
 	}
 
 	public String  getUsernameParameter() {
@@ -845,8 +877,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	public boolean executeZAP(FilePath workspace, BuildListener listener) {
 		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
-		boolean buildSuccess = true;
-		
+		boolean buildSuccess = true;	
 		
 		
 		// Try/catch here because I need to stopZAP in finally block and for that,
@@ -864,6 +895,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				listener.getLogger().println("Skip loadSession");
 			}
 			
+			/* ======================================================= 
+			 * |                  SE UP CONTEXT                       |
+			 * ======================================================= 
+			 */
+			
+			//setup context
+			this.contextId=setUpContext(listener,targetURL,excludedUrl,zapClientAPI);
+			
+			//Non authenticated mod : spider url, ajax spider url, scan url
 			/* ======================================================= 
 			 * |                  SPIDER URL                          |
 			 * ======================================================= 
@@ -885,22 +925,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			} else {
 				listener.getLogger().println("Skip Ajax spidering the site [" + targetURL + "]");
 			}
-
-			/* ======================================================= 
-			 * |                  SPIDER AS USER                      |
-			 * ======================================================= 
-			 */
-			if (spiderAsUser) {
-				listener.getLogger().println("Setting up Authentication");
-				setUpAuthentication(targetURL,listener,zapClientAPI, 
-					username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator);
-
-				listener.getLogger().println("Spider the site [" + targetURL + "] as user ["+username+"]");				
-				spiderURLAsUser(targetURL, listener, zapClientAPI, contextId, userId);
-			} else {
-				listener.getLogger().println("Skip spidering the site [" + targetURL + "] as user ["+username+"]");
-			}
-
+			
 			/* ======================================================= 
 			 * |                  SCAN URL                            |
 			 * ======================================================= 
@@ -910,6 +935,44 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				scanURL(targetURL, listener, zapClientAPI);
 			} else {
 				listener.getLogger().println("Skip scanning the site [" + targetURL + "]");
+			}
+			
+			//Authenticated mod : spider url as user, ajax spider url as user, scan url as user
+
+			/* ======================================================= 
+			 * |                  SPIDER AS USER                      |
+			 * ======================================================= 
+			 */
+			if (spiderAsUser) {
+				listener.getLogger().println("Setting up Authentication");
+				setUpAuthentication(targetURL,listener,zapClientAPI, username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator);
+
+				listener.getLogger().println("Spider the site [" + targetURL + "] as user ["+username+"]");				
+				spiderURLAsUser(targetURL, listener, zapClientAPI, contextId, userId);
+			} else {
+				listener.getLogger().println("Skip spidering the site [" + targetURL + "] as user ["+username+"]");
+			}
+			
+			/* ======================================================= 
+			 * |                AJAX SPIDER URL AS USER               |
+			 * ======================================================= 
+			 */
+			if (ajaxSpiderURLAsUser) {
+				listener.getLogger().println("Ajax Spider the site [" + targetURL + "] as user ["+username+"]");
+				ajaxSpiderURL(targetURL, listener, zapClientAPI);
+			} else {
+				listener.getLogger().println("Skip Ajax spidering the site [" + targetURL + "] as user ["+username+"]");
+			}
+
+			/* ======================================================= 
+			 * |                  SCAN URL AS USER                    |
+			 * ======================================================= 
+			 */
+			if (scanURLAsUser) {				
+				listener.getLogger().println("Scan the site [" + targetURL + "] as user ["+username+"]");
+				scanURLAsUser(targetURL, listener, zapClientAPI,contextId, userId);
+			} else {
+				listener.getLogger().println("Skip scanning the site [" + targetURL + "] as user ["+username+"]");
 			}
 			
 			/* ======================================================= 
@@ -1004,18 +1067,24 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	}
 
 	/**
-	 * set up a context and add url to it
+	 * set up a context and add/exclude url to/from it
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param URL the URL to be added to context
+	 * @param excludedUrl the URL to exclude from context
 	 * @param zapClientAPI the client API to use ZAP API methods
 	 * @return the context ID of the context
 	 * @throws ClientApiException
 	 */
-	private String setUpContext(BuildListener listener,final String url, ClientApi zapClientAPI) 
+	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
-
-		String contextName="context1";//name of the Context to be create
+		
+		url=url.trim();
+		excludedUrl=excludedUrl.trim();
+		
+		String contextName="context1";//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to added to context same url user give to scan
+		String contextExcludedUrl="\\Q"+excludedUrl+"\\E";//url to exclude from context like the log out url
+		
 		String contextIdTemp;
 
 		//Create new context
@@ -1026,6 +1095,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		//method signature : includeInContext(String apikey, String contextname, String regex) 
 		//					 throws ClientApiException
 		zapClientAPI.context.includeInContext(API_KEY,contextName,contextURL);
+		
+		if (!excludedUrl.equals("")) {
+			zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedUrl);
+		}
 
 		listener.getLogger().println("URL "+url+" added to Context ["+contextIdTemp+"]");
 		
@@ -1105,9 +1178,31 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		zapClientAPI.users.setUserEnabled(API_KEY, contextId,userIdTemp,"true");
 		listener.getLogger().println("User : "+username+" is now Enabled");
+		
+		//to make spidering and ajax spidering in authentication mod
+		setUpForcedUser(listener, zapClientAPI, contextId,  userIdTemp) ;
 
 		return userIdTemp;
 	}
+	
+	/**
+	 * set up forced user for the context and enable user, this help to make spidering and ajax spidering as authenticated user
+	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param zapClientAPI the client API to use ZAP API methods
+	 * @param contextId id of the created context
+	 * @return userId id of the newly setup user
+	 * @throws ClientApiException
+	 * @throws UnsupportedEncodingException 
+	 */
+	private void setUpForcedUser(BuildListener listener, ClientApi zapClientAPI, String contextid, String userid) 
+						throws ClientApiException, UnsupportedEncodingException {
+		
+		zapClientAPI.forcedUser.setForcedUser(API_KEY, contextid,userid);
+		zapClientAPI.forcedUser.setForcedUserModeEnabled(API_KEY, true);
+		
+
+	}
+	
 	
 	/**
 	 * Set up all authentication details
@@ -1129,7 +1224,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				throws ClientApiException, UnsupportedEncodingException {
 
 		//setup context
-		this.contextId=setUpContext(listener,url,zapClientAPI);
+		//this.contextId=setUpContext(listener,url,zapClientAPI);
 				
 		//set up authentication method
 		setUpAuthenticationMethod(listener,zapClientAPI,loggedInIndicator,usernameParameter,
@@ -1168,6 +1263,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param url the url to investigate
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
+	 * @param contextId the id number of the contexte created for this scan
+	 * @param userId the id number of the user created for this scan
 	 * @throws ClientApiException
 	 * @throws InterruptedException
 	 */
@@ -1235,6 +1332,41 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
 		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
+
+		// Wait for complete scanning (equal to 100)
+		// Method signature : status(String scanId)
+		while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
+			listener.getLogger().println("Status scan = " + statusToInt(zapClientAPI.ascan.status("")) + "%");
+			listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
+			listener.getLogger().println("Messages number = " + zapClientAPI.core.numberOfMessages("").toString(2));
+			Thread.sleep(5000);
+		}
+	}
+	
+	/**
+	 * Scan all pages found at url and raised actives alerts
+	 *
+	 * @author abdellah.azougarh
+	 * @param url the url to scan
+	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param zapClientAPI the client API to use ZAP API methods
+	 * @param contextId the id number of the contexte created for this scan
+	 * @param userId the id number of the user created for this scan
+	 * @throws ClientApiException
+	 * @throws InterruptedException 
+	 */
+	private void scanURLAsUser(final String url, BuildListener listener, ClientApi zapClientAPI, String contextId, String userId) 
+			throws ClientApiException, InterruptedException {
+		if(chosenPolicy == null || chosenPolicy.isEmpty()) {
+			listener.getLogger().println("Scan url [" + url + "] with the policy by default");		
+		} else {
+			listener.getLogger().println("Scan url [" + url + "] with the following policy ["
+							+ chosenPolicy + "]");
+		}
+		
+		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
+		// Use a default policy if chosenPolicy is null or empty
+		zapClientAPI.ascan.scanAsUser(API_KEY, url, contextId, userId,"true", chosenPolicy, null, null);//arg2, arg3, arg4, arg5, arg6, arg7)scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
 
 		// Wait for complete scanning (equal to 100)
 		// Method signature : status(String scanId)
