@@ -209,7 +209,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private final ArrayList<String> chosenFormats;
 	
 	/** Filename for ZAProxy reports. It can contain a relative path. */
-	private final String filenameReports;
+	private  String filenameReports;
 	
 	/** Save session or not */
 	private final boolean saveSession;
@@ -357,6 +357,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return s;
 	}
 	
+	/**
+	 * @param filenameReports the filenameReports to set
+	 */
+	public void setFilenameReports(String filenameReports) {
+		this.filenameReports = filenameReports;
+	}
+
 	// Overridden for better type safety.
 	// If your plugin doesn't really define any property on Descriptor,
 	// you don't have to do this.
