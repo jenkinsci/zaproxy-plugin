@@ -81,25 +81,29 @@ SOFTWARE.
 			<f:textbox clazz="required" />
 		</f:entry>		
 		<f:entry title="${%URL to exclude from context}" field="excludedUrl">
-			<f:textbox   />
+			<f:textarea />
 		</f:entry>
-		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
-
-		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
-				<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
-			<!-- <f:entry>
-				<table width="100%">					
-					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
-						<f:textbox />
-					</f:entry>
-					
-					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
-						<f:select />
-					</f:entry>
-				</table>
-			</f:entry> -->
-		</f:optionalBlock>
+	 	<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+			<f:textbox />
+		</f:entry>					
+		<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+			<f:select />
+		</f:entry>				
+		
+		<f:radioBlock title="${%Unauthenticated scan}" 	name="scanMode" value="NOT_AUTHENTICATED" checked="true" inline="true">
+		<f:entry>
+			<table>
+			<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+			<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />		
+			<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
+		    <f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+			</table>
+		</f:entry>		
+			
+		</f:radioBlock>	
+		<f:radioBlock title="${%Authenticated scan}" 	name="scanMode" value="AUTHENTICATED" checked="${instance.isScanMode('AUTHENTICATED')}" inline="true">
+		<f:entry>
+		<table>	 
 
 		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
 		<f:entry>
@@ -132,20 +136,10 @@ SOFTWARE.
 		</f:optionalBlock>
 		<f:optionalBlock title="${%Ajax Spider URL As User}" field="ajaxSpiderURLAsUser" inline="true" />
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" >
-			<f:entry>
-				<table width="100%">					
-					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
-						<f:textbox />
-					</f:entry>
-					
-					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
-						<f:select />
-					</f:entry>
-				</table>
-			</f:entry>
-		</f:optionalBlock>		
-			
+		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" />		 		
+		</table>
+		</f:entry>	
+		</f:radioBlock>	
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
 				<table width="100%">
