@@ -154,6 +154,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Exclude url from scan **/
 	private final String excludedUrl;
 	
+	/** the scan mode (AUTHENTICATED/NOT_AUTHENTICATED) */
+	private final String scanMode;
+	
 	/** Realize a url spider or not by ZAProxy */
 	private final boolean spiderURL;
 
@@ -273,13 +276,14 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.loginUrl="";
 		this.loggedInIndicator="";
 		this.excludedUrl="";
+		this.scanMode="";
 
 		System.out.println(this.toString());
 	}
 
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
+			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
@@ -292,6 +296,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.filenameLoadSession = filenameLoadSession;
 		this.targetURL = targetURL;
 		this.excludedUrl=excludedUrl;
+		this.scanMode=scanMode;
 		this.spiderURL = spiderURL;
 		this.ajaxSpiderURL=ajaxSpiderURL;
 		this.ajaxSpiderURLAsUser=ajaxSpiderURLAsUser;
@@ -329,6 +334,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "filenameLoadSession ["+filenameLoadSession+"]\n";
 		s += "targetURL ["+targetURL+"]\n";		
 		s += "excludedUrl ["+excludedUrl+"]\n";
+		s += "scanMode ["+scanMode+"]\n";		
 		s += "spiderURL ["+spiderURL+"]\n";
 		s += "spider as user ["+spiderAsUser+"]\n";
 		s += "usernameParameter ["+usernameParameter+"]\n";
@@ -400,6 +406,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	}
 	public String getExcludedUrl() {
 		return excludedUrl;
+	}
+	
+	public String getScanMode(){
+		return scanMode;
 	}
 	
 	public boolean getSpiderURL() {
@@ -505,6 +515,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public String getJdk() {
 		return jdk;
+	}
+	
+	/**
+	 * Test if the test type names match (for marking the radio button).
+	 * 
+	 * @param testTypeName
+	 *            The String representation of the test type.
+	 * @return Whether or not the test type string matches.
+	 */
+	public String isScanMode(String testTypeName) {
+		return this.scanMode.equalsIgnoreCase(testTypeName) ? "true" : "";
 	}
 
 	/**
@@ -910,6 +931,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			//setup context
 			this.contextId=setUpContext(listener,targetURL,excludedUrl,zapClientAPI);
 			
+			
+			
+			if(scanMode.equals("NOT_AUTHENTICATED")) {
+
+			 
+				listener.getLogger().println("SCANMOD : NOT_AUTHENTICATED");
+			
 			//Non authenticated mod : spider url, ajax spider url, scan url
 			/* ======================================================= 
 			 * |                  SPIDER URL                          |
@@ -943,6 +971,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			} else {
 				listener.getLogger().println("Skip scanning the site [" + targetURL + "]");
 			}
+			 
+			} 
+			
+			else if(scanMode.equals("AUTHENTICATED"))   {
+
+			listener.getLogger().println("SCANMOD : AUTHENTICATED");
 			
 			//Authenticated mod : spider url as user, ajax spider url as user, scan url as user
 
@@ -981,6 +1015,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			} else {
 				listener.getLogger().println("Skip scanning the site [" + targetURL + "] as user ["+username+"]");
 			}
+			
+			 
+			}
+			
 			
 			/* ======================================================= 
 			 * |                  SAVE REPORTS                        |
@@ -1086,11 +1124,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				throws ClientApiException {
 		
 		url=url.trim();
-		excludedUrl=excludedUrl.trim();
+		//excludedUrl=excludedUrl.trim();
 		
 		String contextName="context1";//name of the Context to be created
-		String contextURL="\\Q"+url+"\\E.*";//url to added to context same url user give to scan
-		String contextExcludedUrl="\\Q"+excludedUrl+"\\E";//url to exclude from context like the log out url
+		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
+		
 		
 		String contextIdTemp;
 
@@ -1102,12 +1140,35 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		//method signature : includeInContext(String apikey, String contextname, String regex) 
 		//					 throws ClientApiException
 		zapClientAPI.context.includeInContext(API_KEY,contextName,contextURL);
+		listener.getLogger().println("URL "+url+" added to Context ["+contextIdTemp+"]");
 		
+		//excluded urls from context
 		if (!excludedUrl.equals("")) {
-			zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedUrl);
+			
+			try {
+
+				String[] urls = excludedUrl.split("\n");
+				String contextExcludedUrl="";//url to exclude from context like the log out url
+			
+
+				for (int i = 0; i < urls.length; i++) {
+					urls[i] = urls[i].trim();
+					if (!urls[i].isEmpty()) {
+						contextExcludedUrl="\\Q"+urls[i]+"\\E";
+						zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedUrl);
+						listener.getLogger().println("URL exluded from context : "+urls[i]);
+					}
+
+				}
+
+			} catch (ClientApiException e) {
+				e.printStackTrace();
+				listener.error(ExceptionUtils.getStackTrace(e));
+			}
+			 
 		}
 
-		listener.getLogger().println("URL "+url+" added to Context ["+contextIdTemp+"]");
+		
 		
 		return contextIdTemp;
 	}
