@@ -79,11 +79,27 @@ SOFTWARE.
 	
 		<f:entry title="${%Target URL}" field="targetURL">
 			<f:textbox clazz="required" />
+		</f:entry>		
+		<f:entry title="${%URL to exclude from context}" field="excludedUrl">
+			<f:textbox   />
 		</f:entry>
-		
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
 
 		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
+				<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
+		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
+			<!-- <f:entry>
+				<table width="100%">					
+					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+						<f:textbox />
+					</f:entry>
+					
+					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+						<f:select />
+					</f:entry>
+				</table>
+			</f:entry> -->
+		</f:optionalBlock>
 
 		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
 		<f:entry>
@@ -107,13 +123,16 @@ SOFTWARE.
 					</f:entry>
 					<f:entry title="${%Password}" field="password">
 						<f:password clazz="required" />
+					</f:entry>	
+					<f:entry title="${%Other post data}" field="extraPostData">
+						<f:textbox   />
 					</f:entry>					
 				</table>
 			</f:entry>
 		</f:optionalBlock>
-		
+		<f:optionalBlock title="${%Ajax Spider URL As User}" field="ajaxSpiderURLAsUser" inline="true" />
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
+		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" >
 			<f:entry>
 				<table width="100%">					
 					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">

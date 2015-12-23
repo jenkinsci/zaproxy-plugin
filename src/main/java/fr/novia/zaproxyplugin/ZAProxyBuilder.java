@@ -24,13 +24,16 @@
 
 package fr.novia.zaproxyplugin;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.Launcher.LocalLauncher;
 import hudson.Launcher.RemoteLauncher;
+import hudson.Util;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Node;
@@ -117,6 +120,24 @@ public class ZAProxyBuilder extends Builder {
 	// Method called before launching the build
 	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
 		
+		listener.getLogger().println("------- START Replace environment variables -------");
+		
+		//replace the environment variables with the corresponding values
+		String reportName=zaproxy.getFilenameReports();
+		try {
+			reportName=applyMacro( build,  listener,  reportName);
+		} catch (InterruptedException e1) {
+			 
+			listener.error(ExceptionUtils.getStackTrace(e1));
+		}
+		zaproxy.setFilenameReports(reportName);
+				
+		listener.getLogger().println("ReportName : "+reportName);
+		
+		listener.getLogger().println("------- END Replace environment variables -------");
+		
+		
+		
 		if(startZAPFirst) {
 			listener.getLogger().println("------- START Prebuild -------");
 			
@@ -175,6 +196,29 @@ public class ZAProxyBuilder extends Builder {
 		}
 		return res;
 	}
+	
+		
+	/**
+     * Replace macro with environment variable if it exists
+     * @param build
+     * @param listener
+     * @param macro
+     * @return
+     * @throws InterruptedException
+     */
+    public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
+            throws InterruptedException{
+        try {
+            EnvVars envVars = new EnvVars(Computer.currentComputer().getEnvironment());
+            envVars.putAll(build.getEnvironment(listener));
+            envVars.putAll(build.getBuildVariables());
+            return Util.replaceMacro(macro, envVars);
+        } catch (IOException e) {
+        	listener.getLogger().println("Failed to apply macro " + macro);
+	        listener.error(ExceptionUtils.getStackTrace(e));
+        }
+        return macro;
+    }
 	
 	/**
 	 * Copy local policy file to slave in policies directory of ZAP default directory.
