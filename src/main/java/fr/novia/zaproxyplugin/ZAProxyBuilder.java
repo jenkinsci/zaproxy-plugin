@@ -120,7 +120,7 @@ public class ZAProxyBuilder extends Builder {
 	// Method called before launching the build
 	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
 		
-		listener.getLogger().println("------- START Replce environment variables -------");
+		listener.getLogger().println("------- START Replace environment variables -------");
 		
 		//replace the environment variables with the corresponding values
 		String reportName=zaproxy.getFilenameReports();
@@ -134,7 +134,7 @@ public class ZAProxyBuilder extends Builder {
 				
 		listener.getLogger().println("ReportName : "+reportName);
 		
-		listener.getLogger().println("------- END Replce environment variables -------");
+		listener.getLogger().println("------- END Replace environment variables -------");
 		
 		
 		

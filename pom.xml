@@ -40,6 +40,11 @@
 						<name>Thilina Madhusanka</name>
 						<email>madhusanka.thilina@gmail.com</email>
 				</developer>
+				<developer>
+						<id>hackthem</id>
+						<name>Abdellah AZOUGARH</name>
+						<email>abdellah.azougarh@gmail.com</email>
+				</developer>
 		</developers>
 		<scm>
 				<!--<connection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</connection>
