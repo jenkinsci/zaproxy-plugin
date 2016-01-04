@@ -979,15 +979,14 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			listener.getLogger().println("SCANMOD : AUTHENTICATED");
 			
 			//Authenticated mod : spider url as user, ajax spider url as user, scan url as user
+			listener.getLogger().println("Setting up Authentication");
+			setUpAuthentication("FORMBASED",listener,zapClientAPI, username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator);
 
 			/* ======================================================= 
 			 * |                  SPIDER AS USER                      |
 			 * ======================================================= 
 			 */
-			if (spiderAsUser) {
-				listener.getLogger().println("Setting up Authentication");
-				setUpAuthentication(targetURL,listener,zapClientAPI, username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator);
-
+			if (spiderAsUser) {	
 				listener.getLogger().println("Spider the site [" + targetURL + "] as user ["+username+"]");				
 				spiderURLAsUser(targetURL, listener, zapClientAPI, contextId, userId);
 			} else {
@@ -1186,7 +1185,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws ClientApiException
 	 * @throws UnsupportedEncodingException
 	 */
-	private void setUpAuthenticationMethod(BuildListener listener, ClientApi zapClientAPI, 
+	private void setUpFormBasedAuthenticationMethod(BuildListener listener, ClientApi zapClientAPI, 
 				String loggedInIndicator, String usernameParameter, String passwordParameter,String extraPostData,
 				String contextId, String loginUrl) 
 				throws ClientApiException, UnsupportedEncodingException{
@@ -1286,7 +1285,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws InterruptedException 
 	 * @throws UnsupportedEncodingException
 	 */
-	private void setUpAuthentication(final String url, BuildListener listener, ClientApi zapClientAPI, 
+	private void setUpAuthentication( String authenticationMethod,BuildListener listener, ClientApi zapClientAPI, 
 				String username, String password, String usernameParameter, 
 				String passwordParameter, String extraPostData, String loginUrl, String loggedInIndicator)
 				throws ClientApiException, UnsupportedEncodingException {
@@ -1295,8 +1294,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		//this.contextId=setUpContext(listener,url,zapClientAPI);
 				
 		//set up authentication method
-		setUpAuthenticationMethod(listener,zapClientAPI,loggedInIndicator,usernameParameter,
+		if(authenticationMethod.equals("FORMBASED")){
+		setUpFormBasedAuthenticationMethod(listener,zapClientAPI,loggedInIndicator,usernameParameter,
 									passwordParameter,extraPostData,contextId,loginUrl);
+		}
+		else if(authenticationMethod.equals("SCRIPTBASED")){
+			//TODO
+		}
 
 		//set up user
 		this.userId=setUpUser(listener,zapClientAPI,username,password,contextId);

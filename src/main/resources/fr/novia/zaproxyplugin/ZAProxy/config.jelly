@@ -104,9 +104,7 @@ SOFTWARE.
 		<f:radioBlock title="${%Authenticated scan}" 	name="scanMode" value="AUTHENTICATED" checked="${instance.isScanMode('AUTHENTICATED')}" inline="true">
 		<f:entry>
 		<table>	 
-
-		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
-		<f:entry>
+				<f:entry>
 				<table width="100%">
 					<f:entry title="${%Login URL}" field="loginUrl">
 						<f:textbox clazz="required" />
@@ -133,7 +131,8 @@ SOFTWARE.
 					</f:entry>					
 				</table>
 			</f:entry>
-		</f:optionalBlock>
+		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" />
+
 		<f:optionalBlock title="${%Ajax Spider URL As User}" field="ajaxSpiderURLAsUser" inline="true" />
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
 		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" />		 		
