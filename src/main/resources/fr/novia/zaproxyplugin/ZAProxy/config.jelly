@@ -104,6 +104,9 @@ SOFTWARE.
 		<f:radioBlock title="${%Authenticated scan}" 	name="scanMode" value="AUTHENTICATED" checked="${instance.isScanMode('AUTHENTICATED')}" inline="true">
 		<f:entry>
 		<table>	 
+		
+		<f:radioBlock title="${%Form based authentication}" 	name="authenticationMode" value="FORM_BASED" checked="${instance.isAuthenticationMode('FORM_BASED')}" inline="true"> 
+
 				<f:entry>
 				<table width="100%">
 					<f:entry title="${%Login URL}" field="loginUrl">
@@ -131,14 +134,39 @@ SOFTWARE.
 					</f:entry>					
 				</table>
 			</f:entry>
-		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" />
 
+		</f:radioBlock>
+		 <f:radioBlock title="${%Script based authentication}" 	name="authenticationMode" value="SCRIPT_BASED" checked="${instance.isAuthenticationMode('SCRIPT_BASED')}" inline="true">
+					  
+			<f:nested>
+			<f:entry title="${%Authentication script name}" field="authenticationScriptName">								 
+				<f:select />
+			</f:entry>	 		  
+			<f:entry title="${%User name}" field="scriptUsername">
+				<f:textbox clazz="required" />
+			</f:entry>									
+			<f:entry title="${%User password}" field="scriptPassword">
+				<f:password clazz="required" />
+			</f:entry>						  
+			<f:entry title="${%Logged in indicator}" field="scriptLoggedInIndicator" description="L'expression de connexion doit être écrite de cette façon : \QLog out\E.*" >
+				<f:textbox clazz="required" />
+			</f:entry>									
+
+			</f:nested>						
+					  
+		</f:radioBlock>
+		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" />
 		<f:optionalBlock title="${%Ajax Spider URL As User}" field="ajaxSpiderURLAsUser" inline="true" />
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" />		 		
+		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" />	
+		
 		</table>
 		</f:entry>	
 		</f:radioBlock>	
+		
+		
+		
+		
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
 				<table width="100%">
