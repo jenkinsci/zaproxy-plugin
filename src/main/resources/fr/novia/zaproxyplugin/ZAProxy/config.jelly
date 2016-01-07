@@ -30,13 +30,19 @@ SOFTWARE.
 	See global.jelly for a general discussion about jelly script.
 	-->
 	
-	<f:entry title="Timeout for ZAProxy initialization" field="timeoutInSec"
-	description="Enter a value in seconde">
-		<f:number default="60" clazz="required positive-number" />
+	<!-- JDK -->
+	<j:set var="jdks" value="${app.JDKs}" />
+	<f:entry title="${%JDK}" field="jdk">
+		<select class="setting-input validated" name="jdk" checkUrl="'${rootURL}/defaultJDKCheck?value='+this.value">
+			<option>${%InheritFromJob}</option>
+			<j:forEach var="inst" items="${jdks}">
+				<f:option selected="${inst.name==instance.JDK.name}" value="${inst.name}">${inst.name}</f:option>
+			</j:forEach>
+		</select>
 	</f:entry>
 	
-	<f:radioBlock title="${%ZAProxy is installed by Jenkins}" name="autoInstall" value="true" 
-	checked="${instance.autoInstall == true}" inline="true">
+	<f:radioBlock title="${%ZAProxy is installed by Jenkins with a plugin like Custom Tools Plugin}" 
+	name="autoInstall" value="true" checked="${instance == null || instance.autoInstall == true}" inline="true">
 		<f:entry title="${%Tool to use}" field="toolUsed">
 			<f:select />
 		</f:entry>
@@ -49,25 +55,104 @@ SOFTWARE.
 		</f:entry>
 	</f:radioBlock>
 	
-	<f:section title="${%Setup}">
+	<f:advanced>
+		<f:entry title="${%Timeout for ZAProxy initialization}" field="timeoutInSec"
+		description="Enter a value in seconde">
+			<f:number default="60" clazz="required positive-number" />
+		</f:entry>
+		
+		<f:section title="${%Add ZAProxy command line option}">
+			<f:block>
+				<f:repeatableProperty field="cmdLinesZAP" add="${%Add command line option}"/>
+			</f:block>
+		</f:section>
+	</f:advanced>
+	
+	<f:section title="${%Setup}">		
+		<j:invoke on="${descriptor}" method="setWorkspace" >
+			<j:arg type="hudson.FilePath" value="${it.someWorkspace}"/>
+		</j:invoke>
+	
 		<f:entry title="${%Load session}" field="filenameLoadSession">
-			<f:textbox />
+			<f:select />
 		</f:entry>	
 	
 		<f:entry title="${%Target URL}" field="targetURL">
 			<f:textbox clazz="required" />
 		</f:entry>
 		
+		<f:optionalBlock title="${%Execute standalone script type Mozilla Zest}" field="executeStandAloneScript" inline="true" >
+				<f:entry title="${%Load script}" field="filenameLoadStandAloneScript">
+						<f:select />
+				</f:entry>	
+		</f:optionalBlock>
+		
+		
 		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+
+		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
+
+
+
+		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
+		<f:entry>
+				<table width="100%">
+					<f:entry title="${%Login URL}" field="loginUrl">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%Logged in indicator}" field="loggedInIndicator">
+						<f:textbox clazz="required" />
+					</f:entry>
+
+					<f:entry title="${%POST Username Parameter}" field="usernameParameter">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%POST password parameter}" field="passwordParameter">
+						<f:textbox clazz="required" />
+					</f:entry>					
+				
+					<f:entry title="${%Username}" field="username">
+						<f:textbox clazz="required" />
+					</f:entry>
+					<f:entry title="${%Password}" field="password">
+						<f:password clazz="required" />
+					</f:entry>					
+				</table>
+			</f:entry>
+		</f:optionalBlock>
 		
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
+			<f:entry>
+				<table width="100%">					
+					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+						<f:textbox />
+					</f:entry>
+					
+					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+						<f:select />
+					</f:entry>
+				</table>
+			</f:entry>
+		</f:optionalBlock>		
 			
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
 				<table width="100%">
-					<f:entry title="${%Choose format report}" field="chosenFormat">
-						<f:select />
+					<f:entry title="${%Choose format report}" field="chosenFormats">
+						<select name="chosenFormats" multiple="multiple" size="${descriptor.getAllFormats().size()}"
+						class="setting-input select" >
+							<j:forEach var="aFormat" items="${descriptor.getAllFormats()}" >
+								<j:choose>
+								<j:when test="${instance.chosenFormats.contains(aFormat)}">
+									<option value="${aFormat}" selected="selected">${aFormat}</option>
+								</j:when>
+								<j:otherwise>
+									<option value="${aFormat}">${aFormat}</option>
+								</j:otherwise>
+								</j:choose>
+							</j:forEach>
+						</select>
 					</f:entry>
 					<f:entry title="${%Filename for report}" field="filenameReports">
 						<f:textbox clazz="required" />
@@ -85,6 +170,7 @@ SOFTWARE.
 				</table>	
 			</f:entry>
 		</f:optionalBlock>
+		
 	</f:section>
 	
 </j:jelly>
