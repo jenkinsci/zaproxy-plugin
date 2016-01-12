@@ -61,6 +61,8 @@ SOFTWARE.
 			<f:number default="60" clazz="required positive-number" />
 		</f:entry>
 		
+			<f:optionalBlock title="${%Start with GUI (not deamon)}" field="startWithGUI" inline="true" />
+				
 		<f:section title="${%Add ZAProxy command line option}">
 			<f:block>
 				<f:repeatableProperty field="cmdLinesZAP" add="${%Add command line option}"/>
@@ -79,7 +81,16 @@ SOFTWARE.
 	
 		<f:entry title="${%Target URL}" field="targetURL">
 			<f:textbox clazz="required" />
+		</f:entry>		
+		<f:entry title="${%URL to exclude from context}" field="excludedUrl">
+			<f:textarea />
 		</f:entry>
+	 	<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
+			<f:textbox />
+		</f:entry>					
+		<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
+			<f:select />
+		</f:entry>				
 		
 		<f:optionalBlock title="${%Execute standalone script type Mozilla Zest}" field="executeStandAloneScript" inline="true" >
 				<f:entry title="${%Load script}" field="filenameLoadStandAloneScript">
@@ -87,12 +98,20 @@ SOFTWARE.
 				</f:entry>	
 		</f:optionalBlock>
 		
-		
-		<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
-
-		<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />
-
-
+		<f:radioBlock title="${%Unauthenticated scan}" 	name="scanMode" value="NOT_AUTHENTICATED" checked="true" inline="true">
+		<f:entry>
+			<table>
+			<f:optionalBlock title="${%Spider URL}" field="spiderURL" inline="true" />
+			<f:optionalBlock title="${%Ajax Spider URL}" field="ajaxSpiderURL" inline="true" />		
+			<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
+		    <f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" />
+			</table>
+		</f:entry>		
+			
+		</f:radioBlock>	
+		<f:radioBlock title="${%Authenticated scan}" 	name="scanMode" value="AUTHENTICATED" checked="${instance.isScanMode('AUTHENTICATED')}" inline="true">
+		<f:entry>
+		<table>	 
 
 		<f:optionalBlock title="${%Spider URL As User}" field="spiderAsUser" inline="true" >
 		<f:entry>
@@ -116,26 +135,19 @@ SOFTWARE.
 					</f:entry>
 					<f:entry title="${%Password}" field="password">
 						<f:password clazz="required" />
+					</f:entry>	
+					<f:entry title="${%Other post data}" field="extraPostData">
+						<f:textbox   />
 					</f:entry>					
 				</table>
 			</f:entry>
 		</f:optionalBlock>
-		
+		<f:optionalBlock title="${%Ajax Spider URL As User}" field="ajaxSpiderURLAsUser" inline="true" />
 		<!-- inline : if present, the foldable section will not be grouped into a separate JSON object upon submission -->
-		<f:optionalBlock title="${%Scan URL}"  field="scanURL" inline="true" >
-			<f:entry>
-				<table width="100%">					
-					<f:entry title="${%ZAProxy default directory}" field="zapDefaultDir">
-						<f:textbox />
-					</f:entry>
-					
-					<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
-						<f:select />
-					</f:entry>
-				</table>
-			</f:entry>
-		</f:optionalBlock>		
-			
+		<f:optionalBlock title="${%Scan URL As User}"  field="scanURLAsUser" inline="true" />		 		
+		</table>
+		</f:entry>	
+		</f:radioBlock>	
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
 				<table width="100%">
