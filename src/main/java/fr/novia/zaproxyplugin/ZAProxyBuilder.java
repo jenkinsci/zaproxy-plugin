@@ -78,6 +78,15 @@ public class ZAProxyBuilder extends Builder {
 	
 	/** Port configured when ZAProxy is used as proxy */
 	private final int zapProxyPort;
+
+
+	/** Baseurl username and password decleration
+	 * to be obtianed form the global.jelly */
+	public static String jiraBaseURL;
+
+	public static String jiraUserName;
+
+	public static String jiraPassword;
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
@@ -88,6 +97,11 @@ public class ZAProxyBuilder extends Builder {
 		this.zapProxyPort = zapProxyPort;
 		this.zaproxy.setZapProxyHost(zapProxyHost);
 		this.zaproxy.setZapProxyPort(zapProxyPort);
+
+		//call the set methods of Zaoroxy to set the values
+		this.zaproxy.setJiraBaseURL(jiraBaseURL);
+		this.zaproxy.setJiraUserName(jiraUserName);
+		this.zaproxy.setJiraPassword(jiraPassword);
 	}
 
 	/*
@@ -329,19 +343,30 @@ public class ZAProxyBuilder extends Builder {
 			// set that to properties and call save().
 			zapProxyDefaultHost = formData.getString("zapProxyDefaultHost");
 			zapProxyDefaultPort = formData.getInt("zapProxyDefaultPort");
+
+			//set the values from the global configuration for CREATE JIRA ISSUES
+			jiraBaseURL=formData.getString("jiraBaseURL");
+			jiraUserName=formData.getString("jiraUserName");
+			jiraPassword=formData.getString("jiraPassword");
+
 			// ^Can also use req.bindJSON(this, formData);
 			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
+
 			save();
 			return super.configure(req,formData);
 		}
 
-		public String getZapProxyDefaultHost() {
-			return zapProxyDefaultHost;
-		}
+		public String getZapProxyDefaultHost() { return zapProxyDefaultHost; }
 
 		public int getZapProxyDefaultPort() {
 			return zapProxyDefaultPort;
 		}
+
+		public String getJiraBaseURL(){return jiraBaseURL;}
+
+		public  String getJiraUserName(){return jiraUserName;}
+
+		public  String getJiraPassword(){return jiraPassword;}
 
 	}
 	

@@ -65,10 +65,7 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import jenkins.model.Jenkins;
 
@@ -234,6 +231,39 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
 
+
+	/** List of all parameters used for the
+	 * ZAP addon jiraIssueCreater
+	 */
+
+	/** create jiras or not */
+	private final boolean createJiras;
+
+	private  String jiraBaseURL;
+
+	private  String jiraUserName;
+
+	private String jiraPassword;
+
+	/** The jira project key */
+	private final String projectKey;
+
+	/** The jira assignee */
+	private final String assignee;
+
+	/** select alert type high */
+	private final boolean alertHigh;
+
+	/** select alert type medium */
+	private final boolean alertMedium;
+
+	/** select alert type low */
+	private final boolean alertLow;
+
+	/** Filetr issues by resource type */
+	private final boolean filterIssuesByResourceType;
+
+
 	/**
      * @deprecated
      * Old constructor 
@@ -244,7 +274,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession,
 			String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk) {
+			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String jiraBaseURL, String jiraUserName, String jiraPassword,
+				   String projectKey,  String assignee, boolean alertHigh, boolean alertMedium,
+				   boolean alertLow, boolean filterIssuesByResourceType ) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -278,6 +310,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.excludedUrl="";
 		this.scanMode="";
 
+		this.jiraBaseURL=jiraBaseURL;
+		this.jiraUserName=jiraUserName;
+		this.jiraPassword=jiraPassword;
+		this.projectKey=projectKey;
+		this.createJiras=createJiras;
+		this.assignee=assignee;
+		this.alertHigh=alertHigh;
+		this.alertMedium=alertMedium;
+		this.alertLow=alertLow;
+		this.filterIssuesByResourceType=filterIssuesByResourceType;
+
 		System.out.println(this.toString());
 	}
 
@@ -287,7 +330,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator) {
+			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,boolean createJiras,
+				   String jiraBaseURL, String jiraUserName, String jiraPassword, String projectKey,
+				   String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -321,6 +366,18 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.loggedInIndicator=loggedInIndicator;
 
 		this.jdk = jdk;
+
+		this.projectKey=projectKey;
+		this.createJiras=createJiras;
+		this.jiraUserName=jiraUserName;
+		this.jiraPassword=jiraPassword;
+		this.assignee=assignee;
+		this.alertHigh=alertHigh;
+		this.alertMedium=alertMedium;
+		this.alertLow=alertLow;
+//		this.selectProjectKeys = selectProjectKeys != null ? new ArrayList<String>(selectProjectKeys) : new ArrayList<String>();
+		this.jiraBaseURL=jiraBaseURL;
+		this.filterIssuesByResourceType=filterIssuesByResourceType;
 		System.out.println(this.toString());
 	}
 	
@@ -359,6 +416,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "zapProxyPort ["+zapProxyPort+"]\n";
 		
 		s+= "jdk ["+jdk+"]";
+
+		s+= "createJiras ["+createJiras+"]\n";
+		s+= "jiraBaseURL ["+jiraBaseURL+"]\n";
+		s+= "jiraUserName ["+jiraUserName+"]\n";
+		s+= "jiraPassword ["+jiraPassword+"]\n";
+		s+= "projectKey ["+projectKey+"]\n";
+		s+= "assignee ["+assignee+"]\n";
+		s+= "alertHigh ["+alertHigh+"]\n";
+		s+= "alertMedium ["+alertMedium+"]\n";
+		s+= "alertLow ["+alertLow+"]\n";
+		s+="filterIssuesByResourceType["+filterIssuesByResourceType+"]\n";
 		
 		return s;
 	}
@@ -506,6 +574,44 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public String getLoggedInIndicator() {
 		return loggedInIndicator;
 	}
+
+	public boolean getcreateJiras(){
+		return  createJiras;
+	}
+
+	public String getProjectKey(){
+		return projectKey;
+	}
+
+	public String getassignee(){
+		return projectKey;
+	}
+
+	public boolean getalertHigh(){
+		return alertHigh;
+	}
+
+	public boolean getalertMedium(){
+		return alertMedium;
+	}
+
+	public boolean getalertLow(){
+		return alertLow;
+	}
+
+	public boolean getfilterIssuesByResourceType(){ return filterIssuesByResourceType; }
+
+//	public List<String> getselectProjectKeys(){return  selectProjectKeys;}
+
+	/*gets and sets the values from the credentials and base urls
+	* method call is from Zaproxybuilder*/
+
+	public void setJiraBaseURL(String jiraBaseURL){ this.jiraBaseURL=jiraBaseURL; }
+
+	public void setJiraUserName(String jiraUserName){this.jiraUserName=jiraUserName;}
+
+	public void setJiraPassword(String jiraPassword){this.jiraPassword=jiraPassword;}
+
 	/**
 	 * Gets the JDK that this Sonar builder is configured with, or null.
 	 */
@@ -662,6 +768,26 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			throw new IllegalArgumentException("zapProxy Port is less than 0");
 		} else
 			listener.getLogger().println("zapProxyPort = " + zapProxyPort);
+
+		if(jiraBaseURL.equals(null)) {
+			throw new IllegalArgumentException("Jira Base URL not Found");
+		} else
+			listener.getLogger().println("jiraBaseURL = " + jiraBaseURL);
+
+		if(jiraUserName.equals(null)) {
+			throw new IllegalArgumentException("Jira User name not Found");
+		} else
+			listener.getLogger().println("jiraUserName = " + jiraUserName);
+
+		if(jiraPassword.equals(null)) {
+			throw new IllegalArgumentException("Jira password not Found");
+		} else {
+			String pass = "";
+			for (int i = 0; i < jiraPassword.length(); i++) {
+				pass += "*";
+			}
+			listener.getLogger().println("jiraUserName = " + pass);
+		}
 		
 	}
 		
@@ -893,7 +1019,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		final String fullFileName = filenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
 		FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
-		listener.getLogger().println("File ["+ reportsFile.getAbsolutePath() +"] saved");
+		listener.getLogger().println("File [" + reportsFile.getAbsolutePath() + "] saved");
 	}
 
 	/**
@@ -1031,6 +1157,59 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 					saveReport(report, listener, workspace, zapClientAPI);
 				}
 			}
+
+
+			  /* =======================================================
+			 * |                  CREATE JIRA ISSUES                       |
+			 * =======================================================
+			 */
+			if (createJiras) {
+				// Generates reports for all formats selected
+
+				listener.getLogger().println("******************    Strated creating jiras    ************************");
+				Map<String, String> map = null;
+				map = new HashMap<String, String>();
+
+				if (API_KEY != null) {
+					map.put("apikey", API_KEY);
+				}
+				map.put("jiraBaseURL",jiraBaseURL);
+				map.put("jiraUserName",jiraUserName);
+				map.put("jiraPassword",jiraPassword);
+				map.put("projectKey",projectKey);
+				map.put("jiraUserName",jiraUserName);
+				map.put("assignee",assignee);
+				map.put("high",returnCheckedStatus(alertHigh));
+				map.put("medium",returnCheckedStatus(alertMedium));
+				map.put("low",returnCheckedStatus(alertLow));
+				map.put("filterIssuesByResourceType",returnCheckedStatus(filterIssuesByResourceType));
+
+				listener.getLogger().println("******************    initialized variables     *************************");
+
+				listener.getLogger().println("            Api key  : " + API_KEY);
+				listener.getLogger().println("            Base URL  : " + jiraBaseURL);
+				listener.getLogger().println("            UserName  : " + jiraUserName);
+				listener.getLogger().println("            Project key  : " + projectKey);
+				listener.getLogger().println("            Assignee  : " + assignee);
+				listener.getLogger().println("            Export High alerts  : " + alertHigh);
+				listener.getLogger().println("            Export Medium alerts  : "+alertMedium);
+				listener.getLogger().println("            Export Low alerts  : "+alertLow);
+				listener.getLogger().println("            Filter by resource Type  : "+filterIssuesByResourceType);
+
+				try{
+
+					zapClientAPI.callApi("jiraIssueCreater", "action", "createJiraIssues", map);
+
+				}catch(ClientApiException e){
+
+					listener.getLogger().println(e.getMessage());
+				}
+
+			}else{
+				listener.getLogger().println("Skiped creating jiras");
+			}
+
+
 			
 			/* ======================================================= 
 			 * |                  SAVE SESSION                        |
@@ -1068,6 +1247,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 		return buildSuccess;
+	}
+
+	/**method used to return the checked state
+	 * inside CREATE JIRA ISSUES
+	 * **/
+	private String returnCheckedStatus(boolean checkedStatus){
+		if(checkedStatus){
+			return "1";
+		}else{
+			return "0";
+		}
 	}
 	
 	/**
