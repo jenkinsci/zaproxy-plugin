@@ -61,6 +61,8 @@ SOFTWARE.
 			<f:number default="60" clazz="required positive-number" />
 		</f:entry>
 		
+		<f:optionalBlock title="${%Start with GUI (not deamon, not headless)}" field="startWithGUI" inline="true" />
+		
 		<f:section title="${%Add ZAProxy command line option}">
 			<f:block>
 				<f:repeatableProperty field="cmdLinesZAP" add="${%Add command line option}"/>
@@ -88,7 +90,13 @@ SOFTWARE.
 		</f:entry>					
 		<f:entry title="${%Choose policy to use}" field="chosenPolicy" >
 			<f:select />
-		</f:entry>				
+		</f:entry>
+		
+		<f:optionalBlock title="${%Execute standalone script type Mozilla Zest}" field="executeStandAloneScript" inline="true" >
+			<f:entry title="${%Load script}" field="filenameLoadStandAloneScript">
+				<f:select />
+			</f:entry>	
+		</f:optionalBlock>				
 		
 		<f:radioBlock title="${%Unauthenticated scan}" 	name="scanMode" value="NOT_AUTHENTICATED" checked="true" inline="true">
 		<f:entry>

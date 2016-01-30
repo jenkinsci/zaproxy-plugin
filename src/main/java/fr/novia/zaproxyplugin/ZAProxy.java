@@ -101,6 +101,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public static final String FILE_POLICY_EXTENSION = ".policy";
 	public static final String FILE_SESSION_EXTENSION = ".session";
 	public static final String NAME_POLICIES_DIR_ZAP = "policies";
+	public static final String FILE_ZEST_SCRIPT_EXTENSION = ".zst";
 	
 	public static final String CMD_LINE_DIR = "-dir";
 	public static final String CMD_LINE_HOST = "-host";
@@ -263,6 +264,14 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Filetr issues by resource type */
 	private final boolean filterIssuesByResourceType;
 
+	/** Execute stand alone ECMAScript prior spidering */
+	private final boolean executeStandAloneScript;
+	
+	/** Stand alone script to load */
+	private final String filenameLoadStandAloneScript;
+	
+	/** Stand ZAP with GUI (not deamon)*/
+	private final boolean startWithGUI;
 
 	/**
      * @deprecated
@@ -276,7 +285,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String jiraBaseURL, String jiraUserName, String jiraPassword,
 				   String projectKey,  String assignee, boolean alertHigh, boolean alertMedium,
-				   boolean alertLow, boolean filterIssuesByResourceType ) {
+				   boolean alertLow, boolean filterIssuesByResourceType,
+				   boolean executeStandAloneScript, String filenameLoadStandAloneScript, boolean startWithGUI ) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -320,6 +330,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.executeStandAloneScript = executeStandAloneScript;
+		this.filenameLoadStandAloneScript = filenameLoadStandAloneScript;
+		
+		this.startWithGUI=startWithGUI;
 
 		System.out.println(this.toString());
 	}
@@ -332,7 +346,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
 			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,boolean createJiras,
 				   String jiraBaseURL, String jiraUserName, String jiraPassword, String projectKey,
-				   String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
+				   String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType,
+				   boolean executeStandAloneScript, String filenameLoadStandAloneScript, boolean startWithGUI) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -378,6 +393,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 //		this.selectProjectKeys = selectProjectKeys != null ? new ArrayList<String>(selectProjectKeys) : new ArrayList<String>();
 		this.jiraBaseURL=jiraBaseURL;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.executeStandAloneScript = executeStandAloneScript;
+		this.filenameLoadStandAloneScript = filenameLoadStandAloneScript;		
+		this.startWithGUI=startWithGUI;
+		
 		System.out.println(this.toString());
 	}
 	
@@ -385,6 +404,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public String toString() {
 		String s = "";
 		s += "autoInstall ["+autoInstall+"]\n";
+		s += "startWithGUI ["+startWithGUI+"]\n"; 
 		s += "toolUsed ["+toolUsed+"]\n";
 		s += "zapHome ["+zapHome+"]\n";
 		s += "timeoutInSec ["+timeoutInSec+"]\n";
@@ -427,6 +447,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "alertMedium ["+alertMedium+"]\n";
 		s+= "alertLow ["+alertLow+"]\n";
 		s+="filterIssuesByResourceType["+filterIssuesByResourceType+"]\n";
+		s += "executeStandAloneScript ["+executeStandAloneScript+"]\n";
+		s += "filenameLoadStandAloneScript ["+filenameLoadStandAloneScript+"]\n";
+		
 		
 		return s;
 	}
@@ -621,6 +644,19 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public String getJdk() {
 		return jdk;
+	}
+	
+	public boolean getExecuteStandAloneScript() {
+		return executeStandAloneScript;
+	}
+
+	public String getFilenameLoadStandAloneScript() {
+		return filenameLoadStandAloneScript;
+		
+	}
+	
+	public boolean getStartWithGUI() {
+		return startWithGUI;
 	}
 	
 	/**
@@ -824,7 +860,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Command to start ZAProxy with parameters
 		List<String> cmd = new ArrayList<String>();
 		cmd.add(zapPathWithProgName.getRemote());
-		cmd.add(CMD_LINE_DAEMON);
+		
+		// check if to start headless (daemon)
+		if 	(!startWithGUI) {
+			cmd.add(CMD_LINE_DAEMON);
+		}
+	
 		cmd.add(CMD_LINE_HOST);
 		cmd.add(zapProxyHost);
 		cmd.add(CMD_LINE_PORT);
@@ -1057,7 +1098,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			//setup context
 			this.contextId=setUpContext(listener,targetURL,excludedUrl,zapClientAPI);
 			
-			
+			/* ======================================================= 
+			 * |                  EXECUTE STANDALONE SCRIPT                          
+			 * ======================================================= 
+			 */
+			if (executeStandAloneScript && filenameLoadStandAloneScript.length() != 0 ) {
+				listener.getLogger().println("Execute standalone Mozilla Zest script  [" + filenameLoadStandAloneScript + "]");
+				loadExecuteScript(filenameLoadStandAloneScript, targetURL, listener, zapClientAPI);
+			} else {
+				listener.getLogger().println("Skip executing standalone script [" + filenameLoadStandAloneScript + "]");
+			}
 			
 			if(scanMode.equals("NOT_AUTHENTICATED")) {
 
@@ -1492,6 +1542,37 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.userId=setUpUser(listener,zapClientAPI,username,password,contextId);
 	}
 	
+	
+	/**
+	 * Load and execute StandAlone script 
+	 *
+	 * @param file to load
+	 * @param listener the listener to display log during the job execution in jenkins
+	 * @param zapClientAPI the client API to use ZAP API methods
+	 * @throws ClientApiException
+	 * @throws InterruptedException 
+	 */
+	private void loadExecuteScript(final String scriptFile, final String url, BuildListener listener, ClientApi zapClientAPI) 
+			throws ClientApiException, InterruptedException {
+		
+		// Method signature : load(String key, String name, String type, String engine, String filename, String description)
+		zapClientAPI.script.load(API_KEY,  new File(scriptFile).getName().toString() , "standalone", "Mozilla Zest",  scriptFile, "Loaded by Jenkins");   
+		
+		// Method signature : run(String key, String name)
+		zapClientAPI.script.runStandAloneScript(API_KEY, new File(scriptFile).getName().toString());
+		
+		// Trying to set an active session. This is needed, if the script is used for multi-factor login or similar
+		try {
+			// Method signature : setActiveSession(String key, String url, String session-name);
+			listener.getLogger().println("try to set active session to Session 0 for 	"+url);
+			zapClientAPI.httpSessions.setActiveSession(API_KEY, url, "Session 0");
+			listener.getLogger().println("set active session to Session 0");
+		} catch (Exception e) {
+			listener.getLogger().println("Warrning: Not able to set active session to Session 0");
+		}
+				
+	}
+	
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts
 	 *
@@ -1729,6 +1810,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			return FormValidation.ok();
 		}
 		
+		
 		/**
 		 * Performs on-the-fly validation of the form field 'filenameSaveSession'.
 		 * <p>
@@ -1875,6 +1957,49 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				});
 			
 				items.add(""); // To not load a session, add a blank choice
+				
+				for (String s : sessionsInString) {
+					items.add(s);
+				}
+			}
+			
+			return items;
+		}
+				
+		public ListBoxModel doFillFilenameLoadStandAloneScriptItems() throws IOException, InterruptedException {
+			ListBoxModel items = new ListBoxModel();
+			
+			// No workspace before the first build, so workspace is null
+			if(workspace != null) {
+				Collection<String> sessionsInString = workspace.act(new FileCallable<Collection<String>>() {
+					private static final long serialVersionUID = 1328740269013881941L;
+	
+					public Collection<String> invoke(File f, VirtualChannel channel) {
+							
+						// List all files with FILE_ZEST_SCRIPT_EXTENSION on the machine where the workspace is located
+						Collection<File> colFiles = FileUtils.listFiles(f,
+								FileFilterUtils.suffixFileFilter(FILE_ZEST_SCRIPT_EXTENSION),
+								TrueFileFilter.INSTANCE);
+						
+						Collection<String> colString = new ArrayList<String>();
+						
+						// "Transform" File into String
+						for (File file : colFiles) {
+							colString.add(file.getAbsolutePath());
+							// The following line is to remove the full path to the workspace,
+							// keep just the relative path to the session
+							//colString.add(file.getAbsolutePath().replace(workspace.getRemote() + File.separatorChar, ""));
+						}
+						return colString;
+					}
+	
+					@Override
+					public void checkRoles(RoleChecker checker) throws SecurityException {
+						// Nothing to do
+					}
+				});
+			
+				items.add(""); // To not load a script, add a blank choice
 				
 				for (String s : sessionsInString) {
 					items.add(s);
