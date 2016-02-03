@@ -44,5 +44,17 @@ SOFTWARE.
 		<f:entry title="${%ZAProxy Default Port}" field="zapProxyDefaultPort">
 			<f:number default="8090" clazz="required positive-number" />
 		</f:entry>
+
+		<f:entry title="${%Jira Base Url}" field="jiraBaseURL">
+                     <f:textbox default="" clazz="required " />
+                </f:entry>
+
+        		<f:entry title="${%Jira Username}" field="jiraUserName">
+                		<f:textbox default="" clazz="required " />
+                </f:entry>
+
+                <f:entry title="${%Password}" field="jiraPassword">
+                		<f:password default="" clazz="required" />
+                </f:entry>
 	</f:section>
 </j:jelly>

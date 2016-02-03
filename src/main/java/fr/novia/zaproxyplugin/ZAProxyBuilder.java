@@ -24,13 +24,16 @@
 
 package fr.novia.zaproxyplugin;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.Launcher.LocalLauncher;
 import hudson.Launcher.RemoteLauncher;
+import hudson.Util;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Node;
@@ -75,6 +78,15 @@ public class ZAProxyBuilder extends Builder {
 	
 	/** Port configured when ZAProxy is used as proxy */
 	private final int zapProxyPort;
+
+
+	/** Baseurl username and password decleration
+	 * to be obtianed form the global.jelly */
+	public static String jiraBaseURL;
+
+	public static String jiraUserName;
+
+	public static String jiraPassword;
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
@@ -85,6 +97,11 @@ public class ZAProxyBuilder extends Builder {
 		this.zapProxyPort = zapProxyPort;
 		this.zaproxy.setZapProxyHost(zapProxyHost);
 		this.zaproxy.setZapProxyPort(zapProxyPort);
+
+		//call the set methods of Zaoroxy to set the values
+		this.zaproxy.setJiraBaseURL(jiraBaseURL);
+		this.zaproxy.setJiraUserName(jiraUserName);
+		this.zaproxy.setJiraPassword(jiraPassword);
 	}
 
 	/*
@@ -116,6 +133,24 @@ public class ZAProxyBuilder extends Builder {
 	
 	// Method called before launching the build
 	public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
+		
+		listener.getLogger().println("------- START Replace environment variables -------");
+		
+		//replace the environment variables with the corresponding values
+		String reportName=zaproxy.getFilenameReports();
+		try {
+			reportName=applyMacro( build,  listener,  reportName);
+		} catch (InterruptedException e1) {
+			 
+			listener.error(ExceptionUtils.getStackTrace(e1));
+		}
+		zaproxy.setFilenameReports(reportName);
+				
+		listener.getLogger().println("ReportName : "+reportName);
+		
+		listener.getLogger().println("------- END Replace environment variables -------");
+		
+		
 		
 		if(startZAPFirst) {
 			listener.getLogger().println("------- START Prebuild -------");
@@ -175,6 +210,29 @@ public class ZAProxyBuilder extends Builder {
 		}
 		return res;
 	}
+	
+		
+	/**
+     * Replace macro with environment variable if it exists
+     * @param build
+     * @param listener
+     * @param macro
+     * @return
+     * @throws InterruptedException
+     */
+    public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
+            throws InterruptedException{
+        try {
+            EnvVars envVars = new EnvVars(Computer.currentComputer().getEnvironment());
+            envVars.putAll(build.getEnvironment(listener));
+            envVars.putAll(build.getBuildVariables());
+            return Util.replaceMacro(macro, envVars);
+        } catch (IOException e) {
+        	listener.getLogger().println("Failed to apply macro " + macro);
+	        listener.error(ExceptionUtils.getStackTrace(e));
+        }
+        return macro;
+    }
 	
 	/**
 	 * Copy local policy file to slave in policies directory of ZAP default directory.
@@ -285,19 +343,30 @@ public class ZAProxyBuilder extends Builder {
 			// set that to properties and call save().
 			zapProxyDefaultHost = formData.getString("zapProxyDefaultHost");
 			zapProxyDefaultPort = formData.getInt("zapProxyDefaultPort");
+
+			//set the values from the global configuration for CREATE JIRA ISSUES
+			jiraBaseURL=formData.getString("jiraBaseURL");
+			jiraUserName=formData.getString("jiraUserName");
+			jiraPassword=formData.getString("jiraPassword");
+
 			// ^Can also use req.bindJSON(this, formData);
 			//  (easier when there are many fields; need set* methods for this, like setUseFrench)
+
 			save();
 			return super.configure(req,formData);
 		}
 
-		public String getZapProxyDefaultHost() {
-			return zapProxyDefaultHost;
-		}
+		public String getZapProxyDefaultHost() { return zapProxyDefaultHost; }
 
 		public int getZapProxyDefaultPort() {
 			return zapProxyDefaultPort;
 		}
+
+		public String getJiraBaseURL(){return jiraBaseURL;}
+
+		public  String getJiraUserName(){return jiraUserName;}
+
+		public  String getJiraPassword(){return jiraPassword;}
 
 	}
 	
