@@ -858,25 +858,28 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		//create jira is enabled
 		if(getcreateJiras()==true){
 			
-			if(jiraBaseURL.equals(null)) {
+			//Min : the url is needed
+			if(jiraBaseURL == null || jiraBaseURL.isEmpty() ) {
 				throw new IllegalArgumentException("Jira Base URL not Found");
 			} else
 				listener.getLogger().println("jiraBaseURL = " + jiraBaseURL);
-	
-			if(jiraUserName.equals(null)) {
+	        //the username can be empty
+			if(jiraUserName == null ) {
 				throw new IllegalArgumentException("Jira User name not Found");
 			} else
 				listener.getLogger().println("jiraUserName = " + jiraUserName);
-	
-			if(jiraPassword.equals(null)) {
+			//the password can be empty
+			if(jiraPassword == null) {
 				throw new IllegalArgumentException("Jira password not Found");
-			} else {
-				String pass = "";
-				for (int i = 0; i < jiraPassword.length(); i++) {
-					pass += "*";
-				}
-				//listener.getLogger().println("jiraPassword = " + pass);
-			}
+			} 
+			//the user can guess the length of the password ;)
+//			else {
+//				String pass = "";
+//				for (int i = 0; i < jiraPassword.length(); i++) {
+//					pass += "*";
+//				}
+//				listener.getLogger().println("jiraPassword = " + pass);
+//			}
 		}
 		
 	}
