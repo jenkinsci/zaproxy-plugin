@@ -464,7 +464,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "createJiras ["+createJiras+"]\n";
 		s+= "jiraBaseURL ["+jiraBaseURL+"]\n";
 		s+= "jiraUserName ["+jiraUserName+"]\n";
-		s+= "jiraPassword ["+jiraPassword+"]\n";
+		//s+= "jiraPassword ["+jiraPassword+"]\n";
 		s+= "projectKey ["+projectKey+"]\n";
 		s+= "assignee ["+assignee+"]\n";
 		s+= "alertHigh ["+alertHigh+"]\n";
@@ -875,7 +875,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				for (int i = 0; i < jiraPassword.length(); i++) {
 					pass += "*";
 				}
-				listener.getLogger().println("jiraUserName = " + pass);
+				//listener.getLogger().println("jiraPassword = " + pass);
 			}
 		}
 		
