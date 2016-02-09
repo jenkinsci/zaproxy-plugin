@@ -228,8 +228,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private final ArrayList<String> chosenFormats;
 	
-	/** Filename for ZAProxy reports. It can contain a relative path. */
+	/** Filename for ZAProxy reports. It can contain a relative pathor or environement variable */
 	private  String filenameReports;
+	
+	/** Filename for ZAProxy reports. It can contain a relative path (it's derived from the one above) */
+	private  String evaluatedFilenameReports;
+	
 	
 	/** Save session or not */
 	private final boolean saveSession;
@@ -357,7 +361,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
 			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,boolean createJiras,
-				   String jiraBaseURL, String jiraUserName, String jiraPassword, String projectKey,
+//				   String jiraBaseURL, String jiraUserName, String jiraPassword, 
+				   String projectKey,
 				   String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
@@ -402,14 +407,14 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
-		this.jiraUserName=jiraUserName;
-		this.jiraPassword=jiraPassword;
+//		this.jiraUserName=jiraUserName;
+//		this.jiraPassword=jiraPassword;
 		this.assignee=assignee;
 		this.alertHigh=alertHigh;
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 //		this.selectProjectKeys = selectProjectKeys != null ? new ArrayList<String>(selectProjectKeys) : new ArrayList<String>();
-		this.jiraBaseURL=jiraBaseURL;
+//		this.jiraBaseURL=jiraBaseURL;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
 		System.out.println(this.toString());
 	}
@@ -457,7 +462,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		s += "saveReports ["+saveReports+"]\n";
 		s += "chosenFormats ["+chosenFormats+"]\n";
-		s += "filenameReports ["+filenameReports+"]\n";
+		s += "filenameReports ["+evaluatedFilenameReports+"]\n";
 		s += "saveSession ["+saveSession+"]\n";
 		s += "filenameSaveSession ["+filenameSaveSession+"]\n";
 
@@ -665,7 +670,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	}
 
 	public String getassignee(){
-		return projectKey;
+		return assignee;
 	}
 
 	public boolean getalertHigh(){
@@ -719,6 +724,18 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public String isAuthenticationMode(String testTypeName) {
 		return this.authenticationMode.equalsIgnoreCase(testTypeName) ? "true" : "";
 	}
+	
+	/*********************************************************************/
+
+		public String getEvaluatedFilenameReports() {
+			return evaluatedFilenameReports;
+		}
+	
+		public void setEvaluatedFilenameReports(String evaluatedFilenameReports) {
+			this.evaluatedFilenameReports = evaluatedFilenameReports;
+		}
+		
+		/**********************************************************************/
 
 	/**
 	 * Get the ZAP_HOME setup by Custom Tools Plugin or already present on the build's machine. 
@@ -1109,7 +1126,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private void saveReport(ZAPreport reportFormat, BuildListener listener, FilePath workspace, 
 			ClientApi clientApi) throws IOException, ClientApiException {
-		final String fullFileName = filenameReports + "." + reportFormat.getFormat();
+		final String fullFileName = evaluatedFilenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
 		FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
 		listener.getLogger().println("File [" + reportsFile.getAbsolutePath() + "] saved");
