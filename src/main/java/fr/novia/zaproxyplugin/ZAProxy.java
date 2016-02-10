@@ -1211,7 +1211,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				map.put("jiraUserName",jiraUserName);
 				map.put("jiraPassword",jiraPassword);
 				map.put("projectKey",projectKey);
-				map.put("jiraUserName",jiraUserName);
+				//map.put("jiraUserName",jiraUserName);
 				map.put("assignee",assignee);
 				map.put("high",returnCheckedStatus(alertHigh));
 				map.put("medium",returnCheckedStatus(alertMedium));
@@ -1233,6 +1233,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				try{
 
 					zapClientAPI.callApi("jiraIssueCreater", "action", "createJiraIssues", map);
+					
 
 				}catch(ClientApiException e){
 
