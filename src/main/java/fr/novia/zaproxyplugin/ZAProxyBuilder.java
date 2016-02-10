@@ -79,16 +79,7 @@ public class ZAProxyBuilder extends Builder {
 	
 	/** Port configured when ZAProxy is used as proxy */
 	private final int zapProxyPort;
-
-
-//	/** Baseurl username and password decleration
-//	 * to be obtianed form the global.jelly */
-//	public static String jiraBaseURL;
-//
-//	public static String jiraUserName;
-//
-//	public static String jiraPassword;
-//	
+	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
 	public ZAProxyBuilder(boolean startZAPFirst, String zapProxyHost, int zapProxyPort, ZAProxy zaproxy) {
@@ -146,6 +137,8 @@ public class ZAProxyBuilder extends Builder {
 			listener.error(ExceptionUtils.getStackTrace(e1));
 		}
 //		zaproxy.setFilenameReports(reportName);
+		//we don't overwrite the file name containing the environment variables
+		//the evaluated value is saved in an other file name 
 		zaproxy.setEvaluatedFilenameReports(reportName);
 				
 		listener.getLogger().println("ReportName : "+reportName);
@@ -222,7 +215,8 @@ public class ZAProxyBuilder extends Builder {
      * @return
      * @throws InterruptedException
      */
-    public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
             throws InterruptedException{
         try {
             EnvVars envVars = new EnvVars(Computer.currentComputer().getEnvironment());

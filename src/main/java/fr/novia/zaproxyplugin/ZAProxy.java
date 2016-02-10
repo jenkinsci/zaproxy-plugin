@@ -48,19 +48,15 @@ import hudson.tools.ToolInstallation;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 
-import java.io.BufferedReader;
+ 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.IOException; 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,7 +78,7 @@ import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
-//import org.parosproxy.paros.CommandLine;
+ 
 
 /**
  * Contains methods to start and execute ZAProxy.
@@ -228,7 +224,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	private final ArrayList<String> chosenFormats;
 	
-	/** Filename for ZAProxy reports. It can contain a relative pathor or environement variable */
+	/** Filename for ZAProxy reports. It can contain a relative path or environment variable */
 	private  String filenameReports;
 	
 	/** Filename for ZAProxy reports. It can contain a relative path (it's derived from the one above) */
@@ -293,14 +289,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
      * Old constructor 
      */
 	@Deprecated
-	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
-			boolean saveReports, List<String> chosenFormats, String filenameReports,
-			boolean saveSession, String filenameSaveSession,
-			String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String jiraBaseURL, String jiraUserName, String jiraPassword,
-				   String projectKey,  String assignee, boolean alertHigh, boolean alertMedium,
-				   boolean alertLow, boolean filterIssuesByResourceType ) {
+	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
+			boolean saveReports, List<String> chosenFormats, String filenameReports,boolean saveSession, String filenameSaveSession,String zapDefaultDir, String chosenPolicy,
+			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String projectKey,  String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType ) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -339,10 +330,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptLoggedInIndicator="";
 		this.authenticationScriptName="";
 
-
-		this.jiraBaseURL=jiraBaseURL;
-		this.jiraUserName=jiraUserName;
-		this.jiraPassword=jiraPassword;
+ 
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
 		this.assignee=assignee;
@@ -360,10 +348,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,boolean createJiras,
-//				   String jiraBaseURL, String jiraUserName, String jiraPassword, 
-				   String projectKey,
-				   String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
+			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
+			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -407,14 +393,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
-//		this.jiraUserName=jiraUserName;
-//		this.jiraPassword=jiraPassword;
 		this.assignee=assignee;
 		this.alertHigh=alertHigh;
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
-//		this.selectProjectKeys = selectProjectKeys != null ? new ArrayList<String>(selectProjectKeys) : new ArrayList<String>();
-//		this.jiraBaseURL=jiraBaseURL;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
 		System.out.println(this.toString());
 	}
@@ -469,7 +451,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "createJiras ["+createJiras+"]\n";
 		s+= "jiraBaseURL ["+jiraBaseURL+"]\n";
 		s+= "jiraUserName ["+jiraUserName+"]\n";
-		//s+= "jiraPassword ["+jiraPassword+"]\n";
 		s+= "projectKey ["+projectKey+"]\n";
 		s+= "assignee ["+assignee+"]\n";
 		s+= "alertHigh ["+alertHigh+"]\n";
@@ -687,7 +668,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public boolean getfilterIssuesByResourceType(){ return filterIssuesByResourceType; }
 
-//	public List<String> getselectProjectKeys(){return  selectProjectKeys;}
 
 	/*gets and sets the values from the credentials and base urls
 	* method call is from Zaproxybuilder*/
@@ -725,17 +705,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return this.authenticationMode.equalsIgnoreCase(testTypeName) ? "true" : "";
 	}
 	
-	/*********************************************************************/
+//get and set of the new field which will contain the evaluated value of the report file name. So the environment variable will persist after each build
 
-		public String getEvaluatedFilenameReports() {
+   public String getEvaluatedFilenameReports() {
 			return evaluatedFilenameReports;
 		}
 	
-		public void setEvaluatedFilenameReports(String evaluatedFilenameReports) {
+	public void setEvaluatedFilenameReports(String evaluatedFilenameReports) {
 			this.evaluatedFilenameReports = evaluatedFilenameReports;
 		}
 		
-		/**********************************************************************/
 
 	/**
 	 * Get the ZAP_HOME setup by Custom Tools Plugin or already present on the build's machine. 
@@ -778,36 +757,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		}
 		return installPath;
 	}
-	
-//	/**
-//	 * Return the ZAProxy program name (zap.bat or zap.sh) depending of the build node and the OS.
-//	 * 
-//	 * @param build
-//	 * @return the ZAProxy program name (zap.bat or zap.sh)
-//	 * @throws IOException
-//	 * @throws InterruptedException
-//	 */
-//	private String getZAPProgramName(AbstractBuild<?, ?> build) throws IOException, InterruptedException {
-//		Node node = build.getBuiltOn();
-//		String zapProgramName = "";
-//		
-//		// Append zap program following Master/Slave and Windows/Unix
-//		if( "".equals(node.getNodeName())) { // Master
-//			if( File.pathSeparatorChar == ':' ) { // UNIX
-//				zapProgramName = ZAP_PROG_NAME_SH;
-//			} else { // Windows (pathSeparatorChar == ';')
-//				zapProgramName = ZAP_PROG_NAME_BAT;
-//			}
-//		} 
-//		else { // Slave
-//			if( "Unix".equals(((SlaveComputer)node.toComputer()).getOSDescription()) ) {
-//				zapProgramName = ZAP_PROG_NAME_SH;
-//			} else {
-//				zapProgramName = ZAP_PROG_NAME_BAT;
-//			}
-//		}
-//		return zapProgramName;
-//	}
 	
 	/**
 	 * Return the ZAProxy program name with separator prefix (\zap.bat or /zap.sh) depending of the build node and the OS.
@@ -872,10 +821,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		} else
 			listener.getLogger().println("zapProxyPort = " + zapProxyPort);
 		
-		//create jira is enabled
+		//createJiras is enabled
 		if(getcreateJiras()==true){
 			
-			//Min : the url is needed
+			//Minimum : the url is needed
 			if(jiraBaseURL == null || jiraBaseURL.isEmpty() ) {
 				throw new IllegalArgumentException("Jira Base URL not Found");
 			} else
@@ -889,14 +838,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			if(jiraPassword == null) {
 				throw new IllegalArgumentException("Jira password not Found");
 			} 
-			//the user can guess the length of the password ;)
-//			else {
-//				String pass = "";
-//				for (int i = 0; i < jiraPassword.length(); i++) {
-//					pass += "*";
-//				}
-//				listener.getLogger().println("jiraPassword = " + pass);
-//			}
+ 
 		}
 		
 	}
@@ -1081,39 +1023,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return seconds * MILLISECONDS_IN_SECOND;
 	}
 	
-//	/**
-//	 * Get all security alerts raised by ZAProxy
-//	 *
-//	 * @param format the report format file
-//	 * @param listener the listener to display log during the job execution in jenkins
-//	 * @return all alerts from ZAProxy in a string
-//	 * @throws IOException 
-//	 * @throws Exception
-//	 */
-//	private String getAllAlerts(final String format, BuildListener listener) throws IOException {
-//		URL url;
-//		String result = "";
-//		Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(zapProxyHost, zapProxyPort));
-//		
-//		url = new URL("http://zap/" + format + "/core/view/alerts");
-//
-//		listener.getLogger().println("Open URL: " + url.toString());
-//
-//		final HttpURLConnection uc = (HttpURLConnection) url.openConnection(proxy);
-//		uc.connect();
-//
-//		final BufferedReader in = new BufferedReader(new InputStreamReader(
-//				uc.getInputStream()));
-//		String inputLine;
-//
-//		while ((inputLine = in.readLine()) != null) {
-//			result = result + inputLine;
-//		}
-//
-//		in.close();
-//		return result;
-//	}
-//	
+ 
 	/**
 	 * Generates security report for one format. Reports are saved into build's workspace.
 	 * 
@@ -1221,10 +1131,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * |                  FORM BASED AUTHENTICATION           |
 			 * ======================================================= 
 			 */
-			//TODO : check which mod of authentication is chosen
+			 
 			setUpAuthentication("FORMBASED",listener,zapClientAPI, username,password,usernameParameter,passwordParameter,extraPostData,loginUrl,loggedInIndicator,null);
 			}
 			else if(authenticationMode.equals("SCRIPT_BASED")){
+				
 			/* ======================================================= 
 			 * |                  SCRIPT BASED AUTHENTICATION         |
 			 * ======================================================= 
@@ -1232,9 +1143,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			
 			setUpAuthentication("SCRIPTBASED",listener,zapClientAPI, scriptUsername,scriptPassword,null,null,null,null,scriptLoggedInIndicator,authenticationScriptName);
 
-			}
-			
-			
+			}			
 			
 			/* ======================================================= 
 			 * |                  SPIDER AS USER                      |
@@ -1331,7 +1240,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 				}
 
 			}else{
-				listener.getLogger().println("Skiped creating jiras");
+				listener.getLogger().println("Skipped creating jiras");
 			}
 
 			
@@ -1438,8 +1347,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
-		url=url.trim();
-		//excludedUrl=excludedUrl.trim();
+		url=url.trim();		 
 		
 		String contextName="context1";//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
@@ -1488,45 +1396,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return contextIdTemp;
 	}
 
-//	/**
-//	 * set up authentication method for the created context
-//	 * @param listener the listener to display log during the job execution in jenkins
-//	 * @param zapClientAPI the client API to use ZAP API methods
-//	 * @param loggedInIdicator indication for know its logged in
-//	 * @param usernameParameter parameter define in passing username
-//	 * @param passwordParameter parameter that define in passing password for the user
-//	 * @param extraPostData other post data than credentials
-//	 * @param contextId id of the creted context
-//	 * @param loginUrl login page url
-//	 * @throws ClientApiException
-//	 * @throws UnsupportedEncodingException
-//	 */
-//	private void setUpAuthenticationMethod(BuildListener listener, ClientApi zapClientAPI, 
-//				String loggedInIndicator, String usernameParameter, String passwordParameter,String extraPostData,
-//				String contextId, String loginUrl) 
-//				throws ClientApiException, UnsupportedEncodingException{
-//
-//		String loginRequestData = usernameParameter+"={%username%}&"+passwordParameter+"={%password%}&"+extraPostData;
-//
-//		// set authentication method 		
-//		// Prepare the configuration in a format similar to how URL parameters are formed. This
-//		// means that any value we add for the configuration values has to be URL encoded.
-//		StringBuilder formBasedConfig = new StringBuilder();
-//		formBasedConfig.append("loginUrl=").append(URLEncoder.encode(loginUrl, "UTF-8"));
-//		formBasedConfig.append("&loginRequestData=").append(URLEncoder.encode(loginRequestData, "UTF-8"));
-//
-//		zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "formBasedAuthentication",
-//				formBasedConfig.toString());
-//		
-//		//end set auth method
-//		listener.getLogger().println("Form Based Authentication added to context");
-//
-//		//add logged in idicator
-//		zapClientAPI.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
-//		listener.getLogger().println("Logged in indicator "+loggedInIndicator+" added to context ");
-//
-//	}
-	
+ 	
 	/**
 	 * set up form based authentication method for the created context
 	 * @param listener the listener to display log during the job execution in jenkins
