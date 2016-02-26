@@ -46,15 +46,15 @@ SOFTWARE.
 		</f:entry>
 
 		<f:entry title="${%Jira Base Url}" field="jiraBaseURL">
-                     <f:textbox default="" clazz="required " />
+                     <f:textbox default=""  />
                 </f:entry>
 
         		<f:entry title="${%Jira Username}" field="jiraUserName">
-                		<f:textbox default="" clazz="required " />
+                		<f:textbox default=""  />
                 </f:entry>
 
                 <f:entry title="${%Password}" field="jiraPassword">
-                		<f:password default="" clazz="required" />
+                		<f:password default=""  />
                 </f:entry>
 	</f:section>
 </j:jelly>

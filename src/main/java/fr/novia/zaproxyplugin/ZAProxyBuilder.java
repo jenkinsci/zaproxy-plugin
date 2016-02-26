@@ -48,6 +48,7 @@ import org.jenkinsci.remoting.RoleChecker;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
+ 
 import java.io.File;
 import java.io.IOException;
 
@@ -78,15 +79,6 @@ public class ZAProxyBuilder extends Builder {
 	
 	/** Port configured when ZAProxy is used as proxy */
 	private final int zapProxyPort;
-
-
-	/** Baseurl username and password decleration
-	 * to be obtianed form the global.jelly */
-	public static String jiraBaseURL;
-
-	public static String jiraUserName;
-
-	public static String jiraPassword;
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
@@ -99,9 +91,9 @@ public class ZAProxyBuilder extends Builder {
 		this.zaproxy.setZapProxyPort(zapProxyPort);
 
 		//call the set methods of Zaoroxy to set the values
-		this.zaproxy.setJiraBaseURL(jiraBaseURL);
-		this.zaproxy.setJiraUserName(jiraUserName);
-		this.zaproxy.setJiraPassword(jiraPassword);
+		this.zaproxy.setJiraBaseURL(ZAProxyBuilder.DESCRIPTOR.getJiraBaseURL());
+		this.zaproxy.setJiraUserName(ZAProxyBuilder.DESCRIPTOR.getJiraUserName());
+		this.zaproxy.setJiraPassword(ZAProxyBuilder.DESCRIPTOR.getJiraPassword());
 	}
 
 	/*
@@ -144,7 +136,10 @@ public class ZAProxyBuilder extends Builder {
 			 
 			listener.error(ExceptionUtils.getStackTrace(e1));
 		}
-		zaproxy.setFilenameReports(reportName);
+//		zaproxy.setFilenameReports(reportName);
+		//we don't overwrite the file name containing the environment variables
+		//the evaluated value is saved in an other file name 
+		zaproxy.setEvaluatedFilenameReports(reportName);
 				
 		listener.getLogger().println("ReportName : "+reportName);
 		
@@ -220,7 +215,8 @@ public class ZAProxyBuilder extends Builder {
      * @return
      * @throws InterruptedException
      */
-    public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+	public static String applyMacro(AbstractBuild build, BuildListener listener, String macro)
             throws InterruptedException{
         try {
             EnvVars envVars = new EnvVars(Computer.currentComputer().getEnvironment());
@@ -304,6 +300,9 @@ public class ZAProxyBuilder extends Builder {
 	 * for the actual HTML fragment for the configuration screen.
 	 */
 	@Extension // This indicates to Jenkins this is an implementation of an extension point.
+	
+	public static final ZAProxyBuilderDescriptorImpl DESCRIPTOR = new ZAProxyBuilderDescriptorImpl();
+
 	public static final class ZAProxyBuilderDescriptorImpl extends BuildStepDescriptor<Builder> {
 		/**
 		 * To persist global configuration information,
@@ -314,7 +313,10 @@ public class ZAProxyBuilder extends Builder {
 		 */
 		private String zapProxyDefaultHost;
 		private int zapProxyDefaultPort;
-
+ 
+		private String jiraBaseURL;
+		private String jiraUserName;
+		private String jiraPassword;
 		/**
 		 * In order to load the persisted global configuration, you have to
 		 * call load() in the constructor.
