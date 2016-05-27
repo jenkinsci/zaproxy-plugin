@@ -34,8 +34,8 @@ import java.io.Serializable;
 /**
  * This object allows to add a ZAP command line option.
  * 
- * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline">
- * 		https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
+ * @see <a href="https://github.com/zaproxy/zap-core-help/wiki/HelpCmdline">
+ * 		https://github.com/zaproxy/zap-core-help/wiki/HelpCmdline</a>
  * 
  * @author ludovic.roucoux
  *
