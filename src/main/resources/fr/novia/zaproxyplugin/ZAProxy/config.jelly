@@ -147,7 +147,13 @@ SOFTWARE.
 			</f:entry>									
 			<f:entry title="${%User password}" field="scriptPassword">
 				<f:password clazz="required" />
-			</f:entry>						  
+			</f:entry>
+			<f:entry title="${%LoginURL}" field="authenticationScriptLoginURL">
+				<f:textbox clazz="required" />
+			</f:entry>
+			<f:entry title="${%Method}" field="authenticationScriptMethod">
+				<f:textbox clazz="required" />
+			</f:entry>
 			<f:entry title="${%Logged in indicator}" field="scriptLoggedInIndicator" description="L'expression de connexion doit être écrite de cette façon : \QLog out\E.*" >
 				<f:textbox clazz="required" />
 			</f:entry>									

@@ -177,8 +177,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** Authentication script name used (script based authentication)*/
 	private final String authenticationScriptName;
-	
-	
+
+	/** Authentication Script LoginURL */
+	private final String authenticationScriptLoginURL;
+
+	/** Authentication Script Method */
+	private final String authenticationScriptMethod;
 	
 	/** Username for the defined user (form based authentication)*/
 	private final String username;
@@ -330,6 +334,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptLoggedInIndicator="";
 		this.authenticationScriptName="";
 
+		this.authenticationScriptLoginURL="";
+		this.authenticationScriptMethod ="POST";
  
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
@@ -348,7 +354,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
+			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName, String authenticationScriptLoginURL, String authenticationScriptMethod,
 			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
@@ -380,7 +386,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptPassword=scriptPassword;
 		this.scriptLoggedInIndicator=scriptLoggedInIndicator;
 		this.authenticationScriptName=authenticationScriptName;
-		
+		this.authenticationScriptLoginURL = authenticationScriptLoginURL;
+		this.authenticationScriptMethod = authenticationScriptMethod.isEmpty() ? "POST" : authenticationScriptMethod;
+
 		this.username=username;
 		this.password=password;
 		this.usernameParameter=usernameParameter;
@@ -424,6 +432,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "authenticationMode ["+authenticationMode+"]\n";
 		
 		s += "authenticationScriptName ["+authenticationScriptName+"]\n";
+		s += "authenticationScriptLoginURL ["+authenticationScriptLoginURL+"]\n";
+		s += "authenticationScriptMethod ["+authenticationScriptMethod+"]\n";
 		s += "scriptUsername ["+scriptUsername+"]\n";		 
 		s += "scriptLoggedInIndicator ["+scriptLoggedInIndicator+"]\n";
 		
@@ -537,6 +547,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 */
 	public String getAuthenticationScriptName() {
 		return authenticationScriptName;
+	}
+
+	/**
+	 * @return the authenticationScriptLoginURL
+	 */
+	public String getAuthenticationScriptLoginURL() {
+		return authenticationScriptLoginURL;
+	}
+
+	/**
+	 * @return the authenticationScriptMethod
+	 */
+	public String getAuthenticationScriptMethod() {
+		return authenticationScriptMethod;
 	}
 
 	/**
@@ -1457,6 +1481,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// means that any value we add for the configuration values has to be URL encoded.
 		StringBuilder scriptBasedConfig = new StringBuilder();
 		scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
+		scriptBasedConfig.append("&LoginURL=").append(URLEncoder.encode(authenticationScriptLoginURL, "UTF-8"));
+		scriptBasedConfig.append("&Method=").append(URLEncoder.encode(authenticationScriptMethod, "UTF-8"));
 		listener.getLogger().println("Setting Script based authentication configuration as: " + scriptBasedConfig.toString());
 		
 		zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication",scriptBasedConfig.toString());
