@@ -178,8 +178,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Authentication script name used (script based authentication)*/
 	private final String authenticationScriptName;
 	
-	
-	
 	/** Username for the defined user (form based authentication)*/
 	private final String username;
 
@@ -247,8 +245,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
 	 */
 	private final ArrayList<ZAPcmdLine> cmdLinesZAP;
-	
-	/** The jdk to use to start ZAProxy */
+
+    /** List of all Authentication Script Parameters
+     * ArrayList because it needs to be Serializable (whereas List is not Serializable)
+     */
+    private final ArrayList<ZAPauthScriptParam> authScriptParams;
+
+    /** The jdk to use to start ZAProxy */
 	private final String jdk;
 
 
@@ -289,9 +292,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
      * Old constructor 
      */
 	@Deprecated
-	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
-			boolean saveReports, List<String> chosenFormats, String filenameReports,boolean saveSession, String filenameSaveSession,String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String projectKey,  String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType ) {
+	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec, String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL, boolean scanURLAsUser,
+                   boolean saveReports, List<String> chosenFormats, String filenameReports, boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
+                   List<ZAPcmdLine> cmdLinesZAP, List<ZAPauthScriptParam> authScriptParams, String jdk, boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -310,6 +313,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
 		this.ajaxSpiderURL=false;
 		this.ajaxSpiderURLAsUser=false;
 		this.jdk = jdk;
@@ -329,7 +333,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptPassword="" ;
 		this.scriptLoggedInIndicator="";
 		this.authenticationScriptName="";
-
  
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
@@ -344,12 +347,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
-			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
-			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
-			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
+                   String filenameLoadSession, String targetURL, String excludedUrl, String scanMode, String authenticationMode, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL, boolean ajaxSpiderURLAsUser,
+                   boolean scanURL, boolean scanURLAsUser, boolean saveReports, List<String> chosenFormats, String filenameReports,
+                   boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
+                   List<ZAPcmdLine> cmdLinesZAP, List<ZAPauthScriptParam> authScriptParams, String jdk, String username, String password, String usernameParameter,
+                   String passwordParameter, String extraPostData, String loginUrl, String loggedInIndicator, String scriptUsername, String scriptPassword, String scriptLoggedInIndicator, String authenticationScriptName,
+                   boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -373,14 +376,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
-		
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
+
 		this.spiderAsUser=spiderAsUser;
 		
 		this.scriptUsername=scriptUsername;
 		this.scriptPassword=scriptPassword;
 		this.scriptLoggedInIndicator=scriptLoggedInIndicator;
 		this.authenticationScriptName=authenticationScriptName;
-		
+
 		this.username=username;
 		this.password=password;
 		this.usernameParameter=usernameParameter;
@@ -602,6 +606,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public List<ZAPcmdLine> getCmdLinesZAP() {
 		return cmdLinesZAP;
 	}
+
+    public List<ZAPauthScriptParam> getAuthScriptParams() {return authScriptParams;}
 
 	public boolean getSpiderAsUser() {
 		return spiderAsUser;
@@ -961,6 +967,21 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 	}
+
+    /**
+     * Add list of authentication script parameters
+     * @param s stringbuilder to attach authentication script parameter
+     */
+    private void addZAPAuthScriptParam(StringBuilder s) throws UnsupportedEncodingException{
+        for(ZAPauthScriptParam authScriptParam : authScriptParams) {
+            if(authScriptParam.getScriptParameterName() != null && !authScriptParam.getScriptParameterName().isEmpty()) {
+                s.append("&" + URLEncoder.encode(authScriptParam.getScriptParameterName(), "UTF-8") + "=");
+            }
+            if(authScriptParam.getScriptParameterValue() != null && !authScriptParam.getScriptParameterValue().isEmpty()) {
+				s.append(URLEncoder.encode(authScriptParam.getScriptParameterValue(), "UTF-8").toString());
+            }
+        }
+    }
 	
 	/**
 	 * Wait for ZAProxy initialization, so it's ready to use at the end of this method
@@ -1457,6 +1478,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// means that any value we add for the configuration values has to be URL encoded.
 		StringBuilder scriptBasedConfig = new StringBuilder();
 		scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
+
+        // Adds command line arguments if it's provided
+        if(!authScriptParams.isEmpty()) {
+            addZAPAuthScriptParam(scriptBasedConfig);
+        }
+
 		listener.getLogger().println("Setting Script based authentication configuration as: " + scriptBasedConfig.toString());
 		
 		zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication",scriptBasedConfig.toString());
