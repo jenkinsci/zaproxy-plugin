@@ -176,7 +176,26 @@ SOFTWARE.
 		</f:radioBlock>	
 		
 		
-		
+		<f:section title="${%Scan Coverage Control}">
+			<f:entry title="${%Max Children}" field="confSpiderMaxChildren">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Recurse}" field="confSpiderRecurse">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Recurse}" field="confScannerRecurse">
+				<f:textbox />
+			</f:entry>
+			<f:entry title="${%Method}" field="confScannerMethod">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Postdata}" field="confScannerPostdata">
+				<f:textbox />
+			</f:entry>
+			<f:entry title="${%In-Scope-Only}" field="confScannerInscopeonly">
+				<f:textbox />
+			</f:entry>
+		</f:section>
 		
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>
