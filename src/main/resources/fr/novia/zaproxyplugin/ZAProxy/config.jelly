@@ -74,7 +74,11 @@ SOFTWARE.
 		<j:invoke on="${descriptor}" method="setWorkspace" >
 			<j:arg type="hudson.FilePath" value="${it.someWorkspace}"/>
 		</j:invoke>
-	
+
+		<f:entry title="${%Context Name}" field="contextName">
+			<f:textbox   />
+		</f:entry>
+
 		<f:entry title="${%Load session}" field="filenameLoadSession">
 			<f:select />
 		</f:entry>	

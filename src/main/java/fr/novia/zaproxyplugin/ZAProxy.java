@@ -202,6 +202,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Id of the newly created context*/
 	private String contextId;
 
+	/** Name of the newly created context*/
+	private String contextName;
+
 	/** Id of the newly created user*/
 	private String userId;
 
@@ -341,6 +344,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.contextName = "";
 
 		System.out.println(this.toString());
 	}
@@ -352,7 +356,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
                    boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
                    List<ZAPcmdLine> cmdLinesZAP, List<ZAPauthScriptParam> authScriptParams, String jdk, String username, String password, String usernameParameter,
                    String passwordParameter, String extraPostData, String loginUrl, String loggedInIndicator, String scriptUsername, String scriptPassword, String scriptLoggedInIndicator, String authenticationScriptName,
-                   boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
+                   boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType, String contextName) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -402,6 +406,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.contextName=contextName;
 		System.out.println(this.toString());
 	}
 	
@@ -461,7 +466,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "alertMedium ["+alertMedium+"]\n";
 		s+= "alertLow ["+alertLow+"]\n";
 		s+="filterIssuesByResourceType["+filterIssuesByResourceType+"]\n";
-		
+		s+="contextName["+contextName+"]\n";
+
 		return s;
 	}
 	
@@ -674,6 +680,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public boolean getfilterIssuesByResourceType(){ return filterIssuesByResourceType; }
 
+	public String getcontextName(){ return contextName; }
 
 	/*gets and sets the values from the credentials and base urls
 	* method call is from Zaproxybuilder*/
@@ -1369,9 +1376,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
-		url=url.trim();		 
-		
-		String contextName="context1";//name of the Context to be created
+		url=url.trim();
+
+		String contextName = getcontextName() == null ||  getcontextName().isEmpty() ? "Jenkins Default Context": getcontextName();//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
 		
 		
