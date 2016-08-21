@@ -177,22 +177,22 @@ SOFTWARE.
 		
 		
 		<f:section title="${%Scan Coverage Control}">
-			<f:entry title="${%Max Children}" field="confSpiderMaxChildren">
+			<f:entry title="${%Spider- Max Children}" field="confSpiderMaxChildren">
 				<f:textbox  />
 			</f:entry>
-			<f:entry title="${%Recurse}" field="confSpiderRecurse">
+			<f:entry title="${%Spider- Recurse}" field="confSpiderRecurse">
 				<f:textbox  />
 			</f:entry>
-			<f:entry title="${%Recurse}" field="confScannerRecurse">
+			<f:entry title="${%Scanner- Recurse}" field="confScannerRecurse">
 				<f:textbox />
 			</f:entry>
-			<f:entry title="${%Method}" field="confScannerMethod">
+			<f:entry title="${%Scanner- Method}" field="confScannerMethod">
 				<f:textbox  />
 			</f:entry>
-			<f:entry title="${%Postdata}" field="confScannerPostdata">
+			<f:entry title="${%Scanner- Postdata}" field="confScannerPostdata">
 				<f:textbox />
 			</f:entry>
-			<f:entry title="${%In-Scope-Only}" field="confScannerInscopeonly">
+			<f:entry title="${%Scanner- In Scope Only}" field="confScannerInscopeonly">
 				<f:textbox />
 			</f:entry>
 		</f:section>
