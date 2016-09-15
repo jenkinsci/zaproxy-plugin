@@ -121,10 +121,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** Host configured when ZAProxy is used as proxy */
 	private String zapProxyHost;
-	
+
+	/** Host configured when ZAProxy is used as proxy (it's derived from the one above) */
+	private String evaluatedZapProxyHost;
+
 	/** Port configured when ZAProxy is used as proxy */
-	private int zapProxyPort;
-	
+	private String zapProxyPort;
+
+	/** Port configured when ZAProxy is used as proxy (it's derived from the one above) */
+	private int evaluatedZapProxyPort;
+
 	/** Path to the ZAProxy program */
 	private String zapProgram;
 	
@@ -145,10 +151,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** URL to attack by ZAProxy */
 	private final String targetURL;
-	
+
+	/** URL to attack by ZAProxy. (it's derived from the one above) */
+	private  String evaluatedTargetURL;
+
 	/** Exclude url from scan **/
 	private final String excludedUrl;
-	
+
+	/** Exclude url from scan. (it's derived from the one above) */
+	private  String evaluatedExcludedUrl;
+
 	/** the scan mode (AUTHENTICATED/NOT_AUTHENTICATED) */
 	private final String scanMode;
 	
@@ -236,10 +248,16 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** Filename to save ZAProxy session. It can contain a relative path. */
 	private final String filenameSaveSession;
-	
+
+	/** Filename for saved session. (it's derived from the one above) */
+	private  String evaluatedFilenameSaveSession;
+
 	/** The default directory that ZAP uses */
 	private final String zapDefaultDir;
-	
+
+	/** Zap default dir. (it's derived from the one above) */
+	private  String evaluatedZapDefaultDir;
+
 	/** The file policy to use for the scan. It contains only the policy name (without extension) */
 	private final String chosenPolicy;
 	
@@ -247,7 +265,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
 	 */
 	private final ArrayList<ZAPcmdLine> cmdLinesZAP;
-	
+
+	/** List of all ZAP command lines. (it's derived from the one above) */
+	private  ArrayList<ZAPcmdLine> evaluatedCmdLinesZap;
+
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
 
@@ -409,17 +430,17 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "jdk ["+jdk+"]";
 		
 		s += "zapHome ["+zapHome+"]\n";
-		s += "zapProxyHost ["+zapProxyHost+"]\n";
-		s += "zapProxyPort ["+zapProxyPort+"]\n";		
+		s += "zapProxyHost ["+evaluatedZapProxyHost+"]\n";
+		s += "zapProxyPort ["+evaluatedZapProxyPort+"]\n";
 		
 		s += "timeoutInSec ["+timeoutInSec+"]\n";
 		s += "filenameLoadSession ["+filenameLoadSession+"]\n";
 		
-		s += "zapDefaultDir ["+zapDefaultDir+"]\n";
+		s += "zapDefaultDir ["+evaluatedZapDefaultDir+"]\n";
 		s += "chosenPolicy ["+chosenPolicy+"]\n";
 		
-		s += "targetURL ["+targetURL+"]\n";		
-		s += "excludedUrl ["+excludedUrl+"]\n";
+		s += "targetURL ["+evaluatedTargetURL+"]\n";
+		s += "excludedUrl ["+evaluatedExcludedUrl+"]\n";
 		s += "scanMode ["+scanMode+"]\n";
 		s += "authenticationMode ["+authenticationMode+"]\n";
 		
@@ -446,7 +467,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "chosenFormats ["+chosenFormats+"]\n";
 		s += "filenameReports ["+evaluatedFilenameReports+"]\n";
 		s += "saveSession ["+saveSession+"]\n";
-		s += "filenameSaveSession ["+filenameSaveSession+"]\n";
+		s += "filenameSaveSession ["+evaluatedFilenameSaveSession+"]\n";
 
 		s+= "createJiras ["+createJiras+"]\n";
 		s+= "jiraBaseURL ["+jiraBaseURL+"]\n";
@@ -591,11 +612,19 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return chosenPolicy;
 	}
 
+	public String getZapProxyHost() {
+		return zapProxyHost;
+	}
+
 	public void setZapProxyHost(String zapProxyHost) {
 		this.zapProxyHost = zapProxyHost;
 	}
 
-	public void setZapProxyPort(int zapProxyPort) {
+	public String getZapProxyPort() {
+		return zapProxyPort;
+	}
+
+	public void setZapProxyPort(String zapProxyPort) {
 		this.zapProxyPort = zapProxyPort;
 	}
 	
@@ -702,19 +731,164 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	
 	public String isAuthenticationMode(String testTypeName) {
-		return this.authenticationMode.equalsIgnoreCase(testTypeName) ? "true" : "";
+		return this.authenticationMode != null && this.authenticationMode.equalsIgnoreCase(testTypeName) ? "true" : "";
 	}
 	
-//get and set of the new field which will contain the evaluated value of the report file name. So the environment variable will persist after each build
+	/*gets and sets the new fields which will contain the evaluated values of the report file name,
+	* target url, exclude dir, filename save session, zap default dir and cmd lines zap.
+	* So the environment variable will persist after each build*/
 
-   public String getEvaluatedFilenameReports() {
-			return evaluatedFilenameReports;
-		}
-	
+	/**
+	 * Retrieve the zap proxy host field evaluated.
+	 *
+	 * @return The evaluated zap proxy host.
+	 */
+	public String getEvaluatedZapProxyHost() {
+		return evaluatedZapProxyHost;
+	}
+
+	/**
+	 * Set the evaluated zap proxy host field.
+	 *
+	 * @param evaluatedZapProxyHost
+	 * 			The string representation of the zap proxy host field.
+	 */
+	public void setEvaluatedZapProxyHost(String evaluatedZapProxyHost) {
+		this.evaluatedZapProxyHost = evaluatedZapProxyHost;
+	}
+
+	/**
+	 * Retrieve the zap proxy port field evaluated.
+	 *
+	 * @return The evaluated zap proxy port.
+	 */
+	public int getEvaluatedZapProxyPort() {
+		return evaluatedZapProxyPort;
+	}
+
+	/**
+	 * Set the evaluated zap proxy port field.
+	 *
+	 * @param evaluatedZapProxyPort
+	 * 			The string representation of the zap proxy port field.
+	 */
+	public void setEvaluatedZapProxyPort(int evaluatedZapProxyPort) {
+		this.evaluatedZapProxyPort = evaluatedZapProxyPort;
+	}
+
+	/**
+	 * Retrieve the filename reports field evaluated.
+	 *
+	 * @return The evaluated filename reports.
+	 */
+	public String getEvaluatedFilenameReports() {
+		return evaluatedFilenameReports;
+	}
+
+	/**
+	 * Set the evaluated filename reports field.
+	 *
+	 * @param evaluatedFilenameReports
+	 * 			The string representation of the filename reports field.
+     */
 	public void setEvaluatedFilenameReports(String evaluatedFilenameReports) {
-			this.evaluatedFilenameReports = evaluatedFilenameReports;
-		}
-		
+		this.evaluatedFilenameReports = evaluatedFilenameReports;
+	}
+
+	/**
+	 * Retrieve the target url field evaluated.
+	 *
+	 * @return The evaluated target url.
+     */
+	public String getEvaluatedTargetURL() {
+		return evaluatedTargetURL;
+	}
+
+	/**
+	 * Set the evaluated target url field.
+	 *
+	 * @param evaluatedTargetURL
+	 * 			The string representation of the target url field.
+	 */
+	public void setEvaluatedTargetURL(String evaluatedTargetURL) {
+		this.evaluatedTargetURL = evaluatedTargetURL;
+	}
+
+	/**
+	 * Retrieve the excluded url field evaluated.
+	 *
+	 * @return The evaluated excluded url.
+	 */
+	public String getEvaluatedExcludedUrl() {
+		return evaluatedExcludedUrl;
+	}
+
+	/**
+	 * Set the evaluated exclude url field.
+	 *
+	 * @param evaluatedExcludedUrl
+	 * 			The string representation of the exclude url field.
+	 */
+	public void setEvaluatedExcludedUrl(String evaluatedExcludedUrl) {
+		this.evaluatedExcludedUrl = evaluatedExcludedUrl;
+	}
+
+	/**
+	 * Retrieve the filename save session field evaluated.
+	 *
+	 * @return The evaluated filename save session.
+	 */
+	public String getEvaluatedFilenameSaveSession() {
+		return evaluatedFilenameSaveSession;
+	}
+
+	/**
+	 * Set the evaluated filename save session field.
+	 *
+	 * @param evaluatedFilenameSaveSession
+	 * 			The string representation of the filename save session field.
+	 */
+	public void setEvaluatedFilenameSaveSession(String evaluatedFilenameSaveSession) {
+		this.evaluatedFilenameSaveSession = evaluatedFilenameSaveSession;
+	}
+
+	/**
+	 * Retrieve the zap default dir field evaluated.
+	 *
+	 * @return The evaluated zap default dir.
+	 */
+	public String getEvaluatedZapDefaultDir() {
+		return evaluatedZapDefaultDir;
+	}
+
+	/**
+	 * Set the evaluated zap default dir field.
+	 *
+	 * @param evaluatedZapDefaultDir
+	 * 			The string representation of the zap default dir field.
+	 */
+	public void setEvaluatedZapDefaultDir(String evaluatedZapDefaultDir) {
+		this.evaluatedZapDefaultDir = evaluatedZapDefaultDir;
+	}
+
+	/**
+	 * Retrieve the cmd lines zap fields evaluated.
+	 *
+	 * @return The evaluated cmd lines zap.
+	 */
+	public List<ZAPcmdLine> getEvaluatedCmdLinesZap() {
+		return evaluatedCmdLinesZap;
+	}
+
+	/**
+	 * Set the evaluated cmd lines zap field.
+	 *
+	 * @param evaluatedCmdLinesZap
+	 * 			The List<ZAPcmdLine> representation of the cmd lines zap field.
+	 */
+	public void setEvaluatedCmdLinesZap(ArrayList<ZAPcmdLine> evaluatedCmdLinesZap) {
+		this.evaluatedCmdLinesZap = evaluatedCmdLinesZap;
+	}
 
 	/**
 	 * Get the ZAP_HOME setup by Custom Tools Plugin or already present on the build's machine. 
@@ -806,20 +980,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		} else
 			listener.getLogger().println("zapProgram = " + zapProgram);
 		
-		if(targetURL == null || targetURL.isEmpty()) {
+		if(evaluatedTargetURL == null || evaluatedTargetURL.isEmpty()) {
 			throw new IllegalArgumentException("targetURL is missing");
 		} else
-			listener.getLogger().println("targetURL = " + targetURL);
+			listener.getLogger().println("targetURL = " + evaluatedTargetURL);
 
-		if(zapProxyHost == null || zapProxyHost.isEmpty()) {
+		if(evaluatedZapProxyHost == null || evaluatedZapProxyHost.isEmpty()) {
 			throw new IllegalArgumentException("zapProxy Host is missing");
 		} else
-			listener.getLogger().println("zapProxyHost = " + zapProxyHost);
+			listener.getLogger().println("zapProxyHost = " + evaluatedZapProxyHost);
 
-		if(zapProxyPort < 0) {
+		if(evaluatedZapProxyPort < 0) {
 			throw new IllegalArgumentException("zapProxy Port is less than 0");
 		} else
-			listener.getLogger().println("zapProxyPort = " + zapProxyPort);
+			listener.getLogger().println("zapProxyPort = " + evaluatedZapProxyPort);
 		
 		//createJiras is enabled
 		if(getcreateJiras()==true){
@@ -878,20 +1052,20 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		cmd.add(zapPathWithProgName.getRemote());
 		cmd.add(CMD_LINE_DAEMON);
 		cmd.add(CMD_LINE_HOST);
-		cmd.add(zapProxyHost);
+		cmd.add(evaluatedZapProxyHost);
 		cmd.add(CMD_LINE_PORT);
-		cmd.add(String.valueOf(zapProxyPort));
+		cmd.add(String.valueOf(evaluatedZapProxyPort));
 		cmd.add(CMD_LINE_CONFIG);
 		cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 		
 		// Set the default directory used by ZAP if it's defined and if a scan is provided
-		if(scanURL && zapDefaultDir != null && !zapDefaultDir.isEmpty()) {
+		if(scanURL && evaluatedZapDefaultDir != null && !evaluatedZapDefaultDir.isEmpty()) {
 			cmd.add(CMD_LINE_DIR);
-			cmd.add(zapDefaultDir);
+			cmd.add(evaluatedZapDefaultDir);
 		}
 		
 		// Adds command line arguments if it's provided
-		if(!cmdLinesZAP.isEmpty()) {
+		if(!evaluatedCmdLinesZap.isEmpty()) {
 			addZapCmdLine(cmd);
 		}
 			
@@ -952,7 +1126,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param l the list to attach ZAP command line
 	 */
 	private void addZapCmdLine(List<String> l) {
-		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
+		for(ZAPcmdLine zapCmd : evaluatedCmdLinesZap) {
 			if(zapCmd.getCmdLineOption() != null && !zapCmd.getCmdLineOption().isEmpty()) {
 				l.add(zapCmd.getCmdLineOption());
 			}
@@ -981,7 +1155,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		do {
 			try {
 				socket = new Socket();
-				socket.connect(new InetSocketAddress(zapProxyHost, zapProxyPort), connectionTimeoutInMs);
+				socket.connect(new InetSocketAddress(evaluatedZapProxyHost, evaluatedZapProxyPort), connectionTimeoutInMs);
 				connectionSuccessful = true;
 			} catch (SocketTimeoutException ignore) {
 				listener.error(ExceptionUtils.getStackTrace(ignore));
@@ -1050,7 +1224,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @return true is no exception is caught, false otherwise.
 	 */
 	public boolean executeZAP(FilePath workspace, BuildListener listener) {
-		ClientApi zapClientAPI = new ClientApi(zapProxyHost, zapProxyPort);
+		ClientApi zapClientAPI = new ClientApi(evaluatedZapProxyHost, evaluatedZapProxyPort);
 		boolean buildSuccess = true;	
 		
 		
@@ -1075,7 +1249,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 */
 			
 			//setup context
-			this.contextId=setUpContext(listener,targetURL,excludedUrl,zapClientAPI);
+			this.contextId=setUpContext(listener,evaluatedTargetURL,evaluatedExcludedUrl,zapClientAPI);
 			
 			
 			
@@ -1090,10 +1264,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (spiderURL) {
-				listener.getLogger().println("Spider the site [" + targetURL + "]");
-				spiderURL(targetURL, listener, zapClientAPI);
+				listener.getLogger().println("Spider the site [" + evaluatedTargetURL + "]");
+				spiderURL(evaluatedTargetURL, listener, zapClientAPI);
 			} else {
-				listener.getLogger().println("Skip spidering the site [" + targetURL + "]");
+				listener.getLogger().println("Skip spidering the site [" + evaluatedTargetURL + "]");
 			}
 
 			/* ======================================================= 
@@ -1101,10 +1275,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (ajaxSpiderURL) {
-				listener.getLogger().println("Ajax Spider the site [" + targetURL + "]");
-				ajaxSpiderURL(targetURL, listener, zapClientAPI);
+				listener.getLogger().println("Ajax Spider the site [" + evaluatedTargetURL + "]");
+				ajaxSpiderURL(evaluatedTargetURL, listener, zapClientAPI);
 			} else {
-				listener.getLogger().println("Skip Ajax spidering the site [" + targetURL + "]");
+				listener.getLogger().println("Skip Ajax spidering the site [" + evaluatedTargetURL + "]");
 			}
 			
 			/* ======================================================= 
@@ -1112,10 +1286,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (scanURL) {				
-				listener.getLogger().println("Scan the site [" + targetURL + "]");
-				scanURL(targetURL, listener, zapClientAPI);
+				listener.getLogger().println("Scan the site [" + evaluatedTargetURL + "]");
+				scanURL(evaluatedTargetURL, listener, zapClientAPI);
 			} else {
-				listener.getLogger().println("Skip scanning the site [" + targetURL + "]");
+				listener.getLogger().println("Skip scanning the site [" + evaluatedTargetURL + "]");
 			}
 			 
 			} 
@@ -1150,10 +1324,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (spiderAsUser) {	
-				listener.getLogger().println("Spider the site [" + targetURL + "] as user ["+username+"]");				
-				spiderURLAsUser(targetURL, listener, zapClientAPI, contextId, userId);
+				listener.getLogger().println("Spider the site [" + evaluatedTargetURL + "] as user ["+username+"]");
+				spiderURLAsUser(evaluatedTargetURL, listener, zapClientAPI, contextId, userId);
 			} else {
-				listener.getLogger().println("Skip spidering the site [" + targetURL + "] as user ["+username+"]");
+				listener.getLogger().println("Skip spidering the site [" + evaluatedTargetURL + "] as user ["+username+"]");
 			}
 			
 			/* ======================================================= 
@@ -1161,10 +1335,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (ajaxSpiderURLAsUser) {
-				listener.getLogger().println("Ajax Spider the site [" + targetURL + "] as user ["+username+"]");
-				ajaxSpiderURL(targetURL, listener, zapClientAPI);
+				listener.getLogger().println("Ajax Spider the site [" + evaluatedTargetURL + "] as user ["+username+"]");
+				ajaxSpiderURL(evaluatedTargetURL, listener, zapClientAPI);
 			} else {
-				listener.getLogger().println("Skip Ajax spidering the site [" + targetURL + "] as user ["+username+"]");
+				listener.getLogger().println("Skip Ajax spidering the site [" + evaluatedTargetURL + "] as user ["+username+"]");
 			}
 
 			/* ======================================================= 
@@ -1172,10 +1346,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if (scanURLAsUser) {				
-				listener.getLogger().println("Scan the site [" + targetURL + "] as user ["+username+"]");
-				scanURLAsUser(targetURL, listener, zapClientAPI,contextId, userId);
+				listener.getLogger().println("Scan the site [" + evaluatedTargetURL + "] as user ["+username+"]");
+				scanURLAsUser(evaluatedTargetURL, listener, zapClientAPI,contextId, userId);
 			} else {
-				listener.getLogger().println("Skip scanning the site [" + targetURL + "] as user ["+username+"]");
+				listener.getLogger().println("Skip scanning the site [" + evaluatedTargetURL + "] as user ["+username+"]");
 			}
 			
 			 
@@ -1250,8 +1424,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 * ======================================================= 
 			 */
 			if(saveSession) {
-				if(filenameSaveSession != null && !filenameSaveSession.isEmpty()) {
-					File sessionFile = new File(workspace.getRemote(), filenameSaveSession);
+				if(evaluatedFilenameSaveSession != null && !evaluatedFilenameSaveSession.isEmpty()) {
+					File sessionFile = new File(workspace.getRemote(), evaluatedFilenameSaveSession);
 					listener.getLogger().println("Save session to ["+ sessionFile.getAbsolutePath() +"]");
 					
 					// Path creation if it doesn't exist
@@ -1339,7 +1513,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/**
 	 * set up a context and add/exclude url to/from it
 	 * @param listener the listener to display log during the job execution in jenkins
-	 * @param URL the URL to be added to context
+	 * @param url the URL to be added to context
 	 * @param excludedUrl the URL to exclude from context
 	 * @param zapClientAPI the client API to use ZAP API methods
 	 * @return the context ID of the context
@@ -1402,7 +1576,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * set up form based authentication method for the created context
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
-	 * @param loggedInIdicator indication for know its logged in
+	 * @param loggedInIndicator indication for know its logged in
 	 * @param usernameParameter parameter define in passing username
 	 * @param passwordParameter parameter that define in passing password for the user
 	 * @param extraPostData other post data than credentials
@@ -1518,7 +1692,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * set up forced user for the context and enable user, this help to make spidering and ajax spidering as authenticated user
 	 * @param listener the listener to display log during the job execution in jenkins
 	 * @param zapClientAPI the client API to use ZAP API methods
-	 * @param contextId id of the created context
+	 * @param contextid id of the created context
 	 * @return userId id of the newly setup user
 	 * @throws ClientApiException
 	 * @throws UnsupportedEncodingException 
@@ -1542,7 +1716,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param passwordParameter parameter that define in passing password for the user
 	 * @param extraPostData other post data than credentials
 	 * @param loginUrl login page url
-	 * @param loggedInIdicator indication for know its logged in
+	 * @param loggedInIndicator indication for know its logged in
 	 * @throws ClientApiException
 	 * @throws InterruptedException 
 	 * @throws UnsupportedEncodingException

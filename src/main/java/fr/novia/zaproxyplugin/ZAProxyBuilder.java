@@ -51,6 +51,8 @@ import org.kohsuke.stapler.StaplerRequest;
  
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * /!\ 
@@ -78,11 +80,11 @@ public class ZAProxyBuilder extends Builder {
 	private final String zapProxyHost;
 	
 	/** Port configured when ZAProxy is used as proxy */
-	private final int zapProxyPort;
-	
+	private final String zapProxyPort;
+
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public ZAProxyBuilder(boolean startZAPFirst, String zapProxyHost, int zapProxyPort, ZAProxy zaproxy) {
+	public ZAProxyBuilder(boolean startZAPFirst, String zapProxyHost, String zapProxyPort, ZAProxy zaproxy) {
 		this.startZAPFirst = startZAPFirst;
 		this.zaproxy = zaproxy;
 		this.zapProxyHost = zapProxyHost;
@@ -111,7 +113,7 @@ public class ZAProxyBuilder extends Builder {
 		return zapProxyHost;
 	}
 
-	public int getZapProxyPort() {
+	public String getZapProxyPort() {
 		return zapProxyPort;
 	}
 
@@ -129,20 +131,56 @@ public class ZAProxyBuilder extends Builder {
 		listener.getLogger().println("------- START Replace environment variables -------");
 		
 		//replace the environment variables with the corresponding values
+		String zapProxyHost=zaproxy.getZapProxyHost();
+		String zapProxyPort=zaproxy.getZapProxyPort();
 		String reportName=zaproxy.getFilenameReports();
+		String targetURL=zaproxy.getTargetURL();
+		String excludedUrl=zaproxy.getExcludedUrl();
+		String filenameSaveSession=zaproxy.getFilenameSaveSession();
+		String zapDefaultDir=zaproxy.getZapDefaultDir();
+		ArrayList<ZAPcmdLine> cmdLinesZap= new ArrayList<ZAPcmdLine>(zaproxy.getCmdLinesZAP().size());
+
 		try {
+			zapProxyHost=applyMacro( build, listener, zapProxyHost);
+			zapProxyPort=applyMacro( build, listener, zapProxyPort);
 			reportName=applyMacro( build,  listener,  reportName);
+			targetURL=applyMacro( build,  listener,  targetURL);
+			excludedUrl=applyMacro( build,  listener,  excludedUrl);
+			filenameSaveSession=applyMacro( build,  listener,  filenameSaveSession);
+			zapDefaultDir=applyMacro( build,  listener,  zapDefaultDir);
+			for (ZAPcmdLine cmdLineZap : zaproxy.getCmdLinesZAP()) {
+				cmdLinesZap.add(
+						new ZAPcmdLine(
+								applyMacro( build,  listener,  cmdLineZap.getCmdLineOption()),
+								applyMacro( build,  listener,  cmdLineZap.getCmdLineOption())
+						)
+				);
+			}
 		} catch (InterruptedException e1) {
 			 
 			listener.error(ExceptionUtils.getStackTrace(e1));
 		}
 //		zaproxy.setFilenameReports(reportName);
 		//we don't overwrite the file name containing the environment variables
-		//the evaluated value is saved in an other file name 
+		//the evaluated value is saved in an other file name
+		zaproxy.setEvaluatedZapProxyHost(zapProxyHost);
+		zaproxy.setEvaluatedZapProxyPort(Integer.valueOf(zapProxyPort));
 		zaproxy.setEvaluatedFilenameReports(reportName);
-				
+		zaproxy.setEvaluatedTargetURL(targetURL);
+		zaproxy.setEvaluatedExcludedUrl(excludedUrl);
+		zaproxy.setEvaluatedFilenameSaveSession(filenameSaveSession);
+		zaproxy.setEvaluatedZapDefaultDir(zapDefaultDir);
+		zaproxy.setEvaluatedCmdLinesZap(cmdLinesZap);
+
+		listener.getLogger().println("ZapProxyHost : "+zapProxyHost);
+		listener.getLogger().println("ZapProxyPort : "+zapProxyPort);
 		listener.getLogger().println("ReportName : "+reportName);
-		
+		listener.getLogger().println("TargetURL : "+targetURL);
+		listener.getLogger().println("ExcludedUrl : "+excludedUrl);
+		listener.getLogger().println("FilenameSaveSession : "+filenameSaveSession);
+		listener.getLogger().println("ZapDefaultDir : "+zapDefaultDir);
+		listener.getLogger().println("CmdLInesZap : "+cmdLinesZap);
+
 		listener.getLogger().println("------- END Replace environment variables -------");
 		
 		
@@ -248,7 +286,7 @@ public class ZAProxyBuilder extends Builder {
 		
 		String data = FileUtils.readFileToString(fileToCopy, (String)null);
 		
-		stringForLogger = workspace.act(new CopyFileCallable(data, zaproxy.getZapDefaultDir(),
+		stringForLogger = workspace.act(new CopyFileCallable(data, zaproxy.getEvaluatedZapDefaultDir(),
 				fileToCopy.getName(), stringForLogger));
 		listener.getLogger().println(stringForLogger);
 	}
@@ -312,7 +350,7 @@ public class ZAProxyBuilder extends Builder {
 		 * If you don't want fields to be persisted, use <tt>transient</tt>.
 		 */
 		private String zapProxyDefaultHost;
-		private int zapProxyDefaultPort;
+		private String zapProxyDefaultPort;
  
 		private String jiraBaseURL;
 		private String jiraUserName;
@@ -344,7 +382,7 @@ public class ZAProxyBuilder extends Builder {
 			// To persist global configuration information,
 			// set that to properties and call save().
 			zapProxyDefaultHost = formData.getString("zapProxyDefaultHost");
-			zapProxyDefaultPort = formData.getInt("zapProxyDefaultPort");
+			zapProxyDefaultPort = formData.getString("zapProxyDefaultPort");
 
 			//set the values from the global configuration for CREATE JIRA ISSUES
 			jiraBaseURL=formData.getString("jiraBaseURL");
@@ -360,7 +398,7 @@ public class ZAProxyBuilder extends Builder {
 
 		public String getZapProxyDefaultHost() { return zapProxyDefaultHost; }
 
-		public int getZapProxyDefaultPort() {
+		public String getZapProxyDefaultPort() {
 			return zapProxyDefaultPort;
 		}
 

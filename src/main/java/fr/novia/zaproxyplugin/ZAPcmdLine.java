@@ -62,7 +62,16 @@ public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine> implements S
 	public String getCmdLineValue() {
 		return cmdLineValue;
 	}
-	
+
+	@Override
+	public String toString() {
+		String s = "";
+		s += "cmdLineOption ["+cmdLineOption+"]\n";
+		s += "cmdLineValue ["+cmdLineValue+"]\n";
+
+		return s;
+	}
+
 	@Extension 
 	public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPcmdLine> {
 		@Override 

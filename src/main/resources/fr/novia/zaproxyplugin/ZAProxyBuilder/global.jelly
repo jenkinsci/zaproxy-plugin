@@ -42,7 +42,7 @@ SOFTWARE.
 		</f:entry>
 
 		<f:entry title="${%ZAProxy Default Port}" field="zapProxyDefaultPort">
-			<f:number default="8090" clazz="required positive-number" />
+			<f:textbox default="8090" clazz="required" />
 		</f:entry>
 
 		<f:entry title="${%Jira Base Url}" field="jiraBaseURL">
