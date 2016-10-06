@@ -35,37 +35,37 @@ import java.util.Map;
  * @author ludovic.roucoux
  *
  */
-public class ZAPreportCollection implements Serializable {
+public class ZAPReportCollection implements Serializable {
 
 	private static final long serialVersionUID = -470481707608315500L;
 	
-	private static ZAPreportCollection uniqueInstance = new ZAPreportCollection();
+	private static ZAPReportCollection uniqueInstance = new ZAPReportCollection();
 	
 	/** Map where key is the report format represented by a String
 	 *  and value is a ZAPreport object allowing to generate a report with the corresponding format.
 	 */
-	private Map<String, ZAPreport> mapFormatReport;
+	private Map<String, ZAPReport> mapFormatReport;
 
-	private ZAPreportCollection() {
-		mapFormatReport = new HashMap<String, ZAPreport>();
+	private ZAPReportCollection() {
+		mapFormatReport = new HashMap<String, ZAPReport>();
 
 		// ZAPreport's creation
-		ZAPreportXML reportXML = new ZAPreportXML();
-		ZAPreportHTML reportHTML = new ZAPreportHTML();
+		ZAPReportXML reportXML = new ZAPReportXML();
+		ZAPReportHTML reportHTML = new ZAPReportHTML();
 		
 		// Add ZAPreport to the map
 		mapFormatReport.put(reportXML.getFormat(), reportXML);
 		mapFormatReport.put(reportHTML.getFormat(), reportHTML);
 	}
 	
-	public static ZAPreportCollection getInstance(){
+	public static ZAPReportCollection getInstance(){
 		if(uniqueInstance == null)
-			uniqueInstance = new ZAPreportCollection();
+			uniqueInstance = new ZAPReportCollection();
 		
 		return uniqueInstance;
 	}
 
-	public Map<String, ZAPreport> getMapFormatReport() {
+	public Map<String, ZAPReport> getMapFormatReport() {
 		return mapFormatReport;
 	}	
 }

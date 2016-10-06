@@ -33,10 +33,10 @@ import org.zaproxy.clientapi.core.ClientApi;
  * @author ludovic.roucoux
  *
  */
-public class ZAPreportXML extends ZAPreport {
+public class ZAPReportXML extends ZAPReport {
 
-	public ZAPreportXML() {
-		this.format = ZAPreport.REPORT_FORMAT_XML;
+	public ZAPReportXML() {
+		this.format = ZAPReport.REPORT_FORMAT_XML;
 	}
 
 	@Override

@@ -22,53 +22,43 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin.report;
 
-import hudson.Extension;
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
-import org.kohsuke.stapler.DataBoundConstructor;
+import org.zaproxy.clientapi.core.ClientApi;
+import org.zaproxy.clientapi.core.ClientApiException;
 
 import java.io.Serializable;
 
 /**
- * This object allows to add a ZAP command line option.
- * 
- * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline">
- * 		https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
+ * This abstract class is used to generate report in ZAP available format.
  * 
  * @author ludovic.roucoux
  *
  */
-public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine> implements Serializable {
-	private static final long serialVersionUID = -695679474175608775L;
-
-	/** Configuration key for the command line */
-	private final String cmdLineOption;
+public abstract class ZAPReport implements Serializable {
+	private static final long serialVersionUID = 2241940678203529066L;
 	
-	/** Configuration value for the command line */
-	private final String cmdLineValue;
-
-	@DataBoundConstructor 
-	public ZAPcmdLine(String cmdLineOption, String cmdLineValue) {
-		this.cmdLineOption = cmdLineOption;
-		this.cmdLineValue = cmdLineValue;
-	}
-
-	public String getCmdLineOption() {
-		return cmdLineOption;
-	}
-
-	public String getCmdLineValue() {
-		return cmdLineValue;
+	protected static final String REPORT_FORMAT_XML = "xml";
+	protected static final String REPORT_FORMAT_HTML = "html";
+	
+	/** The report format */
+	protected String format;
+		
+	/**
+	 * Generate a ZAP report in the format of daughter class.
+	 * @param clientApi the ZAP api to call the method to generate report
+	 * @param apikey ZAP apikey. Can be null.
+	 * @return an array of byte containing the report.
+	 * @throws ClientApiException
+	 */
+	public abstract byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException;
+	
+	public String getFormat() {
+		return format;
 	}
 	
-	@Extension 
-	public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPcmdLine> {
-		@Override 
-		public String getDisplayName() {
-			return "ZAP command Line";
-		}
+	@Override
+	public String toString() {
+		return getFormat();
 	}
-
 }
