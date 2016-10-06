@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxyplugin.report;
 
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;

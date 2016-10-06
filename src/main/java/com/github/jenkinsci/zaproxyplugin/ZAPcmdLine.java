@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin;
 
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;

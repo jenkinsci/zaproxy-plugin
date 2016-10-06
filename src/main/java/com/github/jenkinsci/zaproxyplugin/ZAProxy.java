@@ -22,10 +22,8 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin;
 
-import fr.novia.zaproxyplugin.report.ZAPreport;
-import fr.novia.zaproxyplugin.report.ZAPreportCollection;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -78,6 +76,9 @@ import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
+
+import com.github.jenkinsci.zaproxyplugin.report.ZAPreport;
+import com.github.jenkinsci.zaproxyplugin.report.ZAPreportCollection;
  
 
 /**
