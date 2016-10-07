@@ -79,7 +79,7 @@ import org.zaproxy.clientapi.core.ClientApiException;
 
 import com.github.jenkinsci.zaproxyplugin.report.ZAPReport;
 import com.github.jenkinsci.zaproxyplugin.report.ZAPReportCollection;
- 
+
 
 /**
  * Contains methods to start and execute ZAProxy.
@@ -178,9 +178,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 	
 	/** Authentication script name used (script based authentication)*/
 	private final String authenticationScriptName;
-	
-	
-	
+
 	/** Username for the defined user (form based authentication)*/
 	private final String username;
 
@@ -204,6 +202,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
 	/** Id of the newly created context*/
 	private String contextId;
+
+	/** Name of the newly created context*/
+	private String contextName;
 
 	/** Id of the newly created user*/
 	private String userId;
@@ -311,6 +312,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
 		this.ajaxSpiderURL=false;
 		this.ajaxSpiderURLAsUser=false;
 		this.jdk = jdk;
@@ -345,10 +347,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
 	@DataBoundConstructor
 	public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
+			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser,
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
-			List<ZAPCmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
+			List<ZAPCmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter,
 			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
 			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
@@ -381,7 +383,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 		this.scriptPassword=scriptPassword;
 		this.scriptLoggedInIndicator=scriptLoggedInIndicator;
 		this.authenticationScriptName=authenticationScriptName;
-		
+
 		this.username=username;
 		this.password=password;
 		this.usernameParameter=usernameParameter;
@@ -603,6 +605,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 	public List<ZAPCmdLine> getCmdLinesZAP() {
 		return cmdLinesZAP;
 	}
+
+    public List<ZAPauthScriptParam> getAuthScriptParams() {return authScriptParams;}
 
 	public boolean getSpiderAsUser() {
 		return spiderAsUser;
@@ -962,7 +966,22 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 			}
 		}
 	}
-	
+
+    /**
+     * Add list of authentication script parameters
+     * @param s stringbuilder to attach authentication script parameter
+     */
+    private void addZAPAuthScriptParam(StringBuilder s) throws UnsupportedEncodingException{
+        for(ZAPauthScriptParam authScriptParam : authScriptParams) {
+            if(authScriptParam.getScriptParameterName() != null && !authScriptParam.getScriptParameterName().isEmpty()) {
+                s.append("&" + URLEncoder.encode(authScriptParam.getScriptParameterName(), "UTF-8") + "=");
+            }
+            if(authScriptParam.getScriptParameterValue() != null && !authScriptParam.getScriptParameterValue().isEmpty()) {
+				s.append(URLEncoder.encode(authScriptParam.getScriptParameterValue(), "UTF-8").toString());
+            }
+        }
+    }
+
 	/**
 	 * Wait for ZAProxy initialization, so it's ready to use at the end of this method
 	 * (otherwise, catch exception). This method is launched on the remote machine (if there is one)
@@ -1035,7 +1054,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 	 * @throws ClientApiException 
 	 * @throws IOException
 	 */
-	private void saveReport(ZAPReport reportFormat, BuildListener listener, FilePath workspace, 
+	private void saveReport(ZAPReport reportFormat, BuildListener listener, FilePath workspace,
 			ClientApi clientApi) throws IOException, ClientApiException {
 		final String fullFileName = evaluatedFilenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
@@ -1349,9 +1368,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
-		url=url.trim();		 
-		
-		String contextName="context1";//name of the Context to be created
+		url=url.trim();
+
+		String contextName = getcontextName() == null ||  getcontextName().isEmpty() ? "Jenkins Default Context": getcontextName();//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
 		
 		
@@ -2123,7 +2142,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
 		private static final long serialVersionUID = -313398999885177679L;
 		
-		private ZAPDriver zaproxy; 
+		private ZAPDriver zaproxy;
 		private BuildListener listener;
 		
 		public WaitZAProxyInitCallable(ZAPDriver zaproxy, BuildListener listener) {
