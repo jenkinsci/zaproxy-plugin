@@ -22,10 +22,8 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin;
 
-import fr.novia.zaproxyplugin.report.ZAPreport;
-import fr.novia.zaproxyplugin.report.ZAPreportCollection;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -78,7 +76,10 @@ import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
- 
+
+import com.github.jenkinsci.zaproxyplugin.report.ZAPReport;
+import com.github.jenkinsci.zaproxyplugin.report.ZAPReportCollection;
+
 
 /**
  * Contains methods to start and execute ZAProxy.
@@ -87,7 +88,7 @@ import org.zaproxy.clientapi.core.ClientApiException;
  * @author ludovic.roucoux
  *
  */
-public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Serializable  {
+public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Serializable  {
 
 	private static final long serialVersionUID = 3381268691497579059L;
 
@@ -177,9 +178,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** Authentication script name used (script based authentication)*/
 	private final String authenticationScriptName;
-	
-	
-	
+
 	/** Username for the defined user (form based authentication)*/
 	private final String username;
 
@@ -203,6 +202,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/** Id of the newly created context*/
 	private String contextId;
+
+	/** Name of the newly created context*/
+	private String contextName;
 
 	/** Id of the newly created user*/
 	private String userId;
@@ -246,7 +248,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** List of all ZAP command lines specified by the user 
 	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
 	 */
-	private final ArrayList<ZAPcmdLine> cmdLinesZAP;
+	private final ArrayList<ZAPCmdLine> cmdLinesZAP;
 	
 	/** The jdk to use to start ZAProxy */
 	private final String jdk;
@@ -289,9 +291,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
      * Old constructor 
      */
 	@Deprecated
-	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
+	public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
 			boolean saveReports, List<String> chosenFormats, String filenameReports,boolean saveSession, String filenameSaveSession,String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String projectKey,  String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType ) {
+			List<ZAPCmdLine> cmdLinesZAP, String jdk, boolean createJiras, String projectKey,  String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType ) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -309,7 +311,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.filenameSaveSession = filenameSaveSession;
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
-		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
+		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
 		this.ajaxSpiderURL=false;
 		this.ajaxSpiderURLAsUser=false;
 		this.jdk = jdk;
@@ -343,11 +346,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	}
 
 	@DataBoundConstructor
-	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
+	public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
+			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser,
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
+			List<ZAPCmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter,
 			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
 			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
@@ -372,7 +375,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.filenameSaveSession = filenameSaveSession;
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
-		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
+		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
 		
 		this.spiderAsUser=spiderAsUser;
 		
@@ -380,7 +383,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptPassword=scriptPassword;
 		this.scriptLoggedInIndicator=scriptLoggedInIndicator;
 		this.authenticationScriptName=authenticationScriptName;
-		
+
 		this.username=username;
 		this.password=password;
 		this.usernameParameter=usernameParameter;
@@ -599,9 +602,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapProxyPort = zapProxyPort;
 	}
 	
-	public List<ZAPcmdLine> getCmdLinesZAP() {
+	public List<ZAPCmdLine> getCmdLinesZAP() {
 		return cmdLinesZAP;
 	}
+
+    public List<ZAPauthScriptParam> getAuthScriptParams() {return authScriptParams;}
 
 	public boolean getSpiderAsUser() {
 		return spiderAsUser;
@@ -952,7 +957,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @param l the list to attach ZAP command line
 	 */
 	private void addZapCmdLine(List<String> l) {
-		for(ZAPcmdLine zapCmd : cmdLinesZAP) {
+		for(ZAPCmdLine zapCmd : cmdLinesZAP) {
 			if(zapCmd.getCmdLineOption() != null && !zapCmd.getCmdLineOption().isEmpty()) {
 				l.add(zapCmd.getCmdLineOption());
 			}
@@ -961,7 +966,22 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 	}
-	
+
+    /**
+     * Add list of authentication script parameters
+     * @param s stringbuilder to attach authentication script parameter
+     */
+    private void addZAPAuthScriptParam(StringBuilder s) throws UnsupportedEncodingException{
+        for(ZAPauthScriptParam authScriptParam : authScriptParams) {
+            if(authScriptParam.getScriptParameterName() != null && !authScriptParam.getScriptParameterName().isEmpty()) {
+                s.append("&" + URLEncoder.encode(authScriptParam.getScriptParameterName(), "UTF-8") + "=");
+            }
+            if(authScriptParam.getScriptParameterValue() != null && !authScriptParam.getScriptParameterValue().isEmpty()) {
+				s.append(URLEncoder.encode(authScriptParam.getScriptParameterValue(), "UTF-8").toString());
+            }
+        }
+    }
+
 	/**
 	 * Wait for ZAProxy initialization, so it's ready to use at the end of this method
 	 * (otherwise, catch exception). This method is launched on the remote machine (if there is one)
@@ -1034,7 +1054,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @throws ClientApiException 
 	 * @throws IOException
 	 */
-	private void saveReport(ZAPreport reportFormat, BuildListener listener, FilePath workspace, 
+	private void saveReport(ZAPReport reportFormat, BuildListener listener, FilePath workspace,
 			ClientApi clientApi) throws IOException, ClientApiException {
 		final String fullFileName = evaluatedFilenameReports + "." + reportFormat.getFormat();
 		File reportsFile = new File(workspace.getRemote(), fullFileName);
@@ -1189,7 +1209,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			if (saveReports) {			
 				// Generates reports for all formats selected
 				for(String format : chosenFormats) {
-					ZAPreport report = ZAPreportCollection.getInstance().getMapFormatReport().get(format);
+					ZAPReport report = ZAPReportCollection.getInstance().getMapFormatReport().get(format);
 					saveReport(report, listener, workspace, zapClientAPI);
 				}
 			}
@@ -1348,9 +1368,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
-		url=url.trim();		 
-		
-		String contextName="context1";//name of the Context to be created
+		url=url.trim();
+
+		String contextName = getcontextName() == null ||  getcontextName().isEmpty() ? "Jenkins Default Context": getcontextName();//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
 		
 		
@@ -1733,7 +1753,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	
 	/**
-	 * Descriptor for {@link ZAProxy}. Used as a singleton.
+	 * Descriptor for {@link ZAPDriver}. Used as a singleton.
 	 * The class is marked as public so that it can be accessed from views.
 	 *
 	 * <p>
@@ -1741,7 +1761,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * for the actual HTML fragment for the configuration screen.
 	 */
 	@Extension
-	public static class ZAProxyDescriptorImpl extends Descriptor<ZAProxy> implements Serializable {
+	public static class ZAProxyDescriptorImpl extends Descriptor<ZAPDriver> implements Serializable {
 		
 		private static final long serialVersionUID = 4028279269334325901L;
 		
@@ -1756,7 +1776,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		/** Map where key is the report format represented by a String
 		 *  and value is a ZAPreport object allowing to generate a report with the corresponding format.
 		 */
-		private Map<String, ZAPreport> mapFormatReport;
+		private Map<String, ZAPReport> mapFormatReport;
 		
 		/** Represents the build's workspace */
 		private FilePath workspace;
@@ -1766,7 +1786,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		 * call load() in the constructor.
 		 */
 		public ZAProxyDescriptorImpl() {
-			mapFormatReport = ZAPreportCollection.getInstance().getMapFormatReport();
+			mapFormatReport = ZAPReportCollection.getInstance().getMapFormatReport();
 			load();
 		}
 		
@@ -1775,7 +1795,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			return null; 
 		}
 
-		public Map<String, ZAPreport> getMapFormatReport() {
+		public Map<String, ZAPReport> getMapFormatReport() {
 			return mapFormatReport;
 		}
 		
@@ -2122,10 +2142,10 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 		private static final long serialVersionUID = -313398999885177679L;
 		
-		private ZAProxy zaproxy; 
+		private ZAPDriver zaproxy;
 		private BuildListener listener;
 		
-		public WaitZAProxyInitCallable(ZAProxy zaproxy, BuildListener listener) {
+		public WaitZAProxyInitCallable(ZAPDriver zaproxy, BuildListener listener) {
 			this.zaproxy = zaproxy;
 			this.listener = listener;
 		}

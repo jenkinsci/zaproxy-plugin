@@ -67,12 +67,18 @@ SOFTWARE.
 			</f:block>
 		</f:section>
 	</f:advanced>
-	
+
+
+
 	<f:section title="${%Setup}">		
 		<j:invoke on="${descriptor}" method="setWorkspace" >
 			<j:arg type="hudson.FilePath" value="${it.someWorkspace}"/>
 		</j:invoke>
-	
+
+		<f:entry title="${%Context Name}" field="contextName">
+			<f:textbox   />
+		</f:entry>
+
 		<f:entry title="${%Load session}" field="filenameLoadSession">
 			<f:select />
 		</f:entry>	
@@ -147,10 +153,15 @@ SOFTWARE.
 			</f:entry>									
 			<f:entry title="${%User password}" field="scriptPassword">
 				<f:password clazz="required" />
-			</f:entry>						  
+			</f:entry>
+
 			<f:entry title="${%Logged in indicator}" field="scriptLoggedInIndicator" description="L'expression de connexion doit être écrite de cette façon : \QLog out\E.*" >
 				<f:textbox clazz="required" />
-			</f:entry>									
+			</f:entry>
+
+			<f:block>
+				<f:repeatableProperty field="authScriptParams" add="${%Add Script Parameter}"/>
+			</f:block>
 
 			</f:nested>						
 					  
@@ -165,7 +176,26 @@ SOFTWARE.
 		</f:radioBlock>	
 		
 		
-		
+		<f:section title="${%Scan Coverage Control}">
+			<f:entry title="${%Spider- Max Children}" field="confSpiderMaxChildren">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Spider- Recurse}" field="confSpiderRecurse">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Scanner- Recurse}" field="confScannerRecurse">
+				<f:textbox />
+			</f:entry>
+			<f:entry title="${%Scanner- Method}" field="confScannerMethod">
+				<f:textbox  />
+			</f:entry>
+			<f:entry title="${%Scanner- Postdata}" field="confScannerPostdata">
+				<f:textbox />
+			</f:entry>
+			<f:entry title="${%Scanner- In Scope Only}" field="confScannerInscopeonly">
+				<f:textbox />
+			</f:entry>
+		</f:section>
 		
 		<f:optionalBlock title="${%Generate report}"  field="saveReports" inline="true">
 			<f:entry>

@@ -22,53 +22,26 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin.report;
 
-import hudson.Extension;
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import java.io.Serializable;
+import org.zaproxy.clientapi.core.ClientApi;
+import org.zaproxy.clientapi.core.ClientApiException;
 
 /**
- * This object allows to add a ZAP command line option.
- * 
- * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline">
- * 		https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
+ * Used to generate ZAP report in html. 
  * 
  * @author ludovic.roucoux
  *
  */
-public class ZAPcmdLine extends AbstractDescribableImpl<ZAPcmdLine> implements Serializable {
-	private static final long serialVersionUID = -695679474175608775L;
+public class ZAPReportHTML extends ZAPReport {
 
-	/** Configuration key for the command line */
-	private final String cmdLineOption;
-	
-	/** Configuration value for the command line */
-	private final String cmdLineValue;
-
-	@DataBoundConstructor 
-	public ZAPcmdLine(String cmdLineOption, String cmdLineValue) {
-		this.cmdLineOption = cmdLineOption;
-		this.cmdLineValue = cmdLineValue;
+	public ZAPReportHTML() {
+		this.format = ZAPReport.REPORT_FORMAT_HTML;
 	}
 
-	public String getCmdLineOption() {
-		return cmdLineOption;
-	}
-
-	public String getCmdLineValue() {
-		return cmdLineValue;
-	}
-	
-	@Extension 
-	public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPcmdLine> {
-		@Override 
-		public String getDisplayName() {
-			return "ZAP command Line";
-		}
+	@Override
+	public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException {
+		return clientApi.core.htmlreport(apikey);
 	}
 
 }

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin;
+package com.github.jenkinsci.zaproxyplugin;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -66,13 +66,13 @@ import java.io.IOException;
  * @author ludovic.roucoux
  *
  */
-public class ZAProxyBuilder extends Builder {
+public class ZAPBuilder extends Builder {
 	
 	/** To start ZAP as a prebuild step */
 	private final boolean startZAPFirst;
 	
 	/** The objet to start and call ZAProxy methods */
-	private final ZAProxy zaproxy;
+	private final ZAPDriver zaproxy;
 	
 	/** Host configured when ZAProxy is used as proxy */
 	private final String zapProxyHost;
@@ -82,7 +82,7 @@ public class ZAProxyBuilder extends Builder {
 	
 	// Fields in fr/novia/zaproxyplugin/ZAProxyBuilder/config.jelly must match the parameter names in the "DataBoundConstructor"
 	@DataBoundConstructor
-	public ZAProxyBuilder(boolean startZAPFirst, String zapProxyHost, int zapProxyPort, ZAProxy zaproxy) {
+	public ZAPBuilder(boolean startZAPFirst, String zapProxyHost, int zapProxyPort, ZAPDriver zaproxy) {
 		this.startZAPFirst = startZAPFirst;
 		this.zaproxy = zaproxy;
 		this.zapProxyHost = zapProxyHost;
@@ -91,9 +91,9 @@ public class ZAProxyBuilder extends Builder {
 		this.zaproxy.setZapProxyPort(zapProxyPort);
 
 		//call the set methods of Zaoroxy to set the values
-		this.zaproxy.setJiraBaseURL(ZAProxyBuilder.DESCRIPTOR.getJiraBaseURL());
-		this.zaproxy.setJiraUserName(ZAProxyBuilder.DESCRIPTOR.getJiraUserName());
-		this.zaproxy.setJiraPassword(ZAProxyBuilder.DESCRIPTOR.getJiraPassword());
+		this.zaproxy.setJiraBaseURL(ZAPBuilder.DESCRIPTOR.getJiraBaseURL());
+		this.zaproxy.setJiraUserName(ZAPBuilder.DESCRIPTOR.getJiraUserName());
+		this.zaproxy.setJiraPassword(ZAPBuilder.DESCRIPTOR.getJiraPassword());
 	}
 
 	/*
@@ -103,7 +103,7 @@ public class ZAProxyBuilder extends Builder {
 		return startZAPFirst;
 	}
 	
-	public ZAProxy getZaproxy() {
+	public ZAPDriver getZaproxy() {
 		return zaproxy;
 	}
 	
@@ -275,7 +275,7 @@ public class ZAProxyBuilder extends Builder {
 		}
 
 		public String invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-			File fileCopiedDir = new File(zapDefaultDir, ZAProxy.NAME_POLICIES_DIR_ZAP);
+			File fileCopiedDir = new File(zapDefaultDir, ZAPDriver.NAME_POLICIES_DIR_ZAP);
 			File fileCopied = new File(fileCopiedDir, copyFilename);
 			
 			FileUtils.writeStringToFile(fileCopied, data);
@@ -292,7 +292,7 @@ public class ZAProxyBuilder extends Builder {
 	
 
 	/**
-	 * Descriptor for {@link ZAProxyBuilder}. Used as a singleton.
+	 * Descriptor for {@link ZAPBuilder}. Used as a singleton.
 	 * The class is marked as public so that it can be accessed from views.
 	 *
 	 * <p>
@@ -382,10 +382,10 @@ public class ZAProxyBuilder extends Builder {
 
 		private static final long serialVersionUID = -313398999885177679L;
 		
-		private ZAProxy zaproxy;
+		private ZAPDriver zaproxy;
 		private BuildListener listener;
 		
-		public ZAProxyCallable(ZAProxy zaproxy, BuildListener listener) {
+		public ZAProxyCallable(ZAPDriver zaproxy, BuildListener listener) {
 			this.zaproxy = zaproxy;
 			this.listener = listener;
 		}

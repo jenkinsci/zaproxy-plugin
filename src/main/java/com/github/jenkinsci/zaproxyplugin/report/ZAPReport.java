@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxyplugin.report;
 
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
@@ -35,7 +35,7 @@ import java.io.Serializable;
  * @author ludovic.roucoux
  *
  */
-public abstract class ZAPreport implements Serializable {
+public abstract class ZAPReport implements Serializable {
 	private static final long serialVersionUID = 2241940678203529066L;
 	
 	protected static final String REPORT_FORMAT_XML = "xml";

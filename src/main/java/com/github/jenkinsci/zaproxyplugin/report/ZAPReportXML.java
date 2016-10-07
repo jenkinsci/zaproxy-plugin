@@ -22,26 +22,25 @@
  * SOFTWARE.
  */
 
-package fr.novia.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxyplugin.report;
 
-import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
+import org.zaproxy.clientapi.core.ClientApi;
 
 /**
- * Used to generate ZAP report in html. 
+ * Used to generate ZAP report in xml. 
  * 
  * @author ludovic.roucoux
  *
  */
-public class ZAPreportHTML extends ZAPreport {
+public class ZAPReportXML extends ZAPReport {
 
-	public ZAPreportHTML() {
-		this.format = ZAPreport.REPORT_FORMAT_HTML;
+	public ZAPReportXML() {
+		this.format = ZAPReport.REPORT_FORMAT_XML;
 	}
 
 	@Override
 	public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException {
-		return clientApi.core.htmlreport(apikey);
+		return clientApi.core.xmlreport(apikey);
 	}
-
 }
