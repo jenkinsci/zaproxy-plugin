@@ -24,37 +24,26 @@ SOFTWARE.
 
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<!--
-	This jelly script is used for per-project configuration.
+    <!-- This jelly script is used for per-project configuration. See global.jelly for a general discussion about jelly script. -->
 
-	See global.jelly for a general discussion about jelly script.
-	-->
-	
-	<f:section title="${%Admin configuration}">
-		<f:entry title="${%Workspace used}">
-			${it.workspace}
-		</f:entry>
-		
-		<f:entry title="${%Override ZAProxy host}" field="zapProxyHost"
-		description="Default Host is : ${descriptor.zapProxyDefaultHost} (${%Configured in admin mode})">
-			<f:textbox clazz="required" default="${descriptor.zapProxyDefaultHost}" />
-		</f:entry>
-		
-		<f:entry title="${%Override ZAProxy port}" field="zapProxyPort"
-		description="Default Port is : ${descriptor.zapProxyDefaultPort} (${%Configured in admin mode})">
-			<f:number default="${descriptor.zapProxyDefaultPort}" clazz="required positive-number" />
-		</f:entry>
-		
-	</f:section>
-		
-	<f:section title="${%Startup}" />
-		<f:optionalBlock title="${%Start ZAProxy in a pre-build step}" field="startZAPFirst" inline="true" />
-		
-		<!-- Load the config.jelly bind to ZAProxy class 
-		This code doesn't work : <st:include page="config.jelly" class="fr.novia.zaproxyplugin.ZAProxy"/>
-		It doesn't create an ZAProxy instance.	So, I use f:property	
-		-->
-		<f:property field="zaproxy" />
-		
-		
+    <f:section title="${%Admin Configurations}">
+        <f:entry title="${%Workspace}">
+            ${it.workspace}
+        </f:entry>
+
+        <f:entry title=""></f:entry>
+
+        <f:entry title="${%Override Host}" field="zapHost" description="Default Host is : ${descriptor.zapDefaultHost} (${%Configured under 'Manage Jenkins' > 'Configure System'})">
+            <f:textbox clazz="required" default="${descriptor.zapDefaultHost}" />
+        </f:entry>
+
+        <f:entry title="${%Override Port}" field="zapPort" description="Default Port is : ${descriptor.zapDefaultPort} (${%Configured under 'Manage Jenkins' > 'Configure System'})">
+            <f:textbox default="${descriptor.zapDefaultPort}" clazz="required" />
+        </f:entry>
+    </f:section>
+
+    <f:section title="${%Startup}" />
+        <f:optionalBlock title="${%Run as Pre-Build Step}" field="startZAPFirst" inline="true" />
+        <!-- Load the config.jelly bind to ZAPDriver class. This code doesn't work : <st:include page="config.jelly" class="com.github.jenkinsci.zaproxyplugin.ZAPDriver"/>. It doesn't create an ZAPDriver. Use f:property instead. -->
+        <f:property field="zaproxy" />
 </j:jelly>

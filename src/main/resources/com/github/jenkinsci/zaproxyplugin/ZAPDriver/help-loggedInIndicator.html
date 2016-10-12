@@ -1,6 +1,3 @@
-Indication to know its now authenticated. Input should be a regular expression.  
-</br>
-eg: Presence of a logout url 
-</br>
-\\Q&lta href=\"../admin/logout_action.jsp\"&gtSign-out&lt/a&gt\\E
-
+The Logged in indicator, when present in a response message (either the header or the body), signifies that the response message corresponds to an authenticated request.</br></br>
+e.g. presence of a 'logout link' or a 'Welcome back, User X' pattern</br></br><hr/></br>
+Indicator should be a Regex in the form of: .*\Qlogout=\E.*
