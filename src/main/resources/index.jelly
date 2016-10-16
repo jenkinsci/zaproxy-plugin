@@ -23,9 +23,5 @@ SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<!--
-This view is used to render the installed plugins page.
--->
-<div>
-This plugin allow you to launch ZAProxy via Jenkins.
-</div>
+<!-- This view is used to render the installed plugins page. -->
+<div>This plugin allow you to launch ZAP via Jenkins.</div>
