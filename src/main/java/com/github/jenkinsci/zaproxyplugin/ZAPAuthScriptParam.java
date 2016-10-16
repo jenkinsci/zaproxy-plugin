@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 ZAP Jenkins Plugin and its related class files.
+ * Copyright (c) 2016 mabdelmoez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
@@ -20,54 +20,36 @@ import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 
-/*
- * @author Ludovic Roucoux
- * @author Johann Ollivier-Lapeyre
- * @author Thilina Madhusanka
- * @author Abdellah Azougarh
- * @author Goran Sarenkapa
- * @author Tanguy de Lignières
- */
-
 /**
- * This object allows to add a ZAP command line option.
- * 
- * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline"> https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
+ * This object allows to add a script parameters dynamically.
+ *
+ * @author mabdelmoez
+ *
  */
-public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements Serializable {
+public class ZAPAuthScriptParam extends AbstractDescribableImpl<ZAPAuthScriptParam> implements Serializable {
 
-    private static final long serialVersionUID = -695679474175608775L;
-
-    @DataBoundConstructor
-    public ZAPCmdLine(String cmdLineOption, String cmdLineValue) {
-        this.cmdLineOption = cmdLineOption;
-        this.cmdLineValue = cmdLineValue;
-    }
+    private static final long serialVersionUID = -6217726623494939211L;
 
     /** Configuration key for the command line */
-    private final String cmdLineOption;
-
-    public String getCmdLineOption() { return cmdLineOption; }
+    private final String scriptParameterName;
 
     /** Configuration value for the command line */
-    private final String cmdLineValue;
+    private final String scriptParameterValue;
 
-    public String getCmdLineValue() { return cmdLineValue; }
-
-    @Override
-    public String toString() {
-        String s = "";
-        s += "cmdLineOption [" + cmdLineOption + "]\n";
-        s += "cmdLineValue [" + cmdLineValue + "]\n";
-        return s;
+    @DataBoundConstructor
+    public ZAPAuthScriptParam(String scriptParameterName, String scriptParameterValue) {
+        this.scriptParameterName = scriptParameterName;
+        this.scriptParameterValue = scriptParameterValue;
     }
 
+    public String getScriptParameterName() { return scriptParameterName; }
+
+    public String getScriptParameterValue() { return scriptParameterValue; }
+
     @Extension
-    public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPCmdLine> {
+    public static class ZAPauthScriptParamDescriptorImpl extends Descriptor<ZAPAuthScriptParam> {
 
         @Override
-        public String getDisplayName() {
-            return "ZAP command Line";
-        }
+        public String getDisplayName() { return "Authentication Script Parameter"; }
     }
 }
