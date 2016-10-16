@@ -47,7 +47,7 @@ public class ZAPAuthScriptParam extends AbstractDescribableImpl<ZAPAuthScriptPar
     public String getScriptParameterValue() { return scriptParameterValue; }
 
     @Extension
-    public static class ZAPauthScriptParamDescriptorImpl extends Descriptor<ZAPAuthScriptParam> {
+    public static class ZAPAuthScriptParamDescriptorImpl extends Descriptor<ZAPAuthScriptParam> {
 
         @Override
         public String getDisplayName() { return "Authentication Script Parameter"; }
