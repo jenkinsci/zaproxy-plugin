@@ -1266,10 +1266,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // means that any value we add for the configuration values has to be
         // URL encoded.
         StringBuilder userAuthConfig = new StringBuilder();
-        userAuthConfig.append("Username=").append(URLEncoder.encode(username, "UTF-8"));
-        userAuthConfig.append("&Password=").append(URLEncoder.encode(password, "UTF-8"));
+        if ( authMethod.equals(SCRIPT_BASED)) { userAuthConfig.append("Username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&Password=").append(URLEncoder.encode(password, "UTF-8")); }
+        else { userAuthConfig.append("username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&password=").append(URLEncoder.encode(password, "UTF-8")); }
         String authCon = userAuthConfig.toString();
-
         /*
          * @class org.zaproxy.clientapi.gen.Users
          * 
