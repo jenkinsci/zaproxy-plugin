@@ -1042,7 +1042,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         includedURL = includedURL.trim();
 
         String contextName;
-        if (context == null || context.isEmpty()) contextName = "context1";
+        if (context == null || context.isEmpty()) contextName = "Jenkins Default Context";
         else contextName = context;
 
         // name of the Context to be created
