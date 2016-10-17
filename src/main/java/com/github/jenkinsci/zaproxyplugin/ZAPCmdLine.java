@@ -26,6 +26,7 @@ import hudson.model.Descriptor;
  * @author Thilina Madhusanka
  * @author Abdellah Azougarh
  * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
  */
 
@@ -63,7 +64,7 @@ public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements S
     }
 
     @Extension
-    public static class ZAPcmdLineDescriptorImpl extends Descriptor<ZAPCmdLine> {
+    public static class ZAPCmdLineDescriptorImpl extends Descriptor<ZAPCmdLine> {
 
         @Override
         public String getDisplayName() {

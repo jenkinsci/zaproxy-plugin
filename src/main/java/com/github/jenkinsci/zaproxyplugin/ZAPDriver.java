@@ -86,6 +86,7 @@ import jenkins.model.Jenkins;
  * @author Thilina Madhusanka
  * @author Abdellah Azougarh
  * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
  *
  * @see <a href= "https://github.com/zaproxy/zap-api-java/tree/master/subprojects/zap-clientapi"> [JAVA] Client API</a> The pom should show the artifact being from maven central.
@@ -1041,7 +1042,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         includedURL = includedURL.trim();
 
         String contextName;
-        if (context == null || context.isEmpty()) contextName = "context1";
+        if (context == null || context.isEmpty()) contextName = "Jenkins Default Context";
         else contextName = context;
 
         // name of the Context to be created
@@ -1265,10 +1266,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // means that any value we add for the configuration values has to be
         // URL encoded.
         StringBuilder userAuthConfig = new StringBuilder();
-        userAuthConfig.append("username=").append(URLEncoder.encode(username, "UTF-8"));
-        userAuthConfig.append("&password=").append(URLEncoder.encode(password, "UTF-8"));
+        if ( authMethod.equals(SCRIPT_BASED)) { userAuthConfig.append("Username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&Password=").append(URLEncoder.encode(password, "UTF-8")); }
+        else { userAuthConfig.append("username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&password=").append(URLEncoder.encode(password, "UTF-8")); }
         String authCon = userAuthConfig.toString();
-
         /*
          * @class org.zaproxy.clientapi.gen.Users
          * 
