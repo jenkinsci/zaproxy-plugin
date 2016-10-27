@@ -58,8 +58,9 @@ public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements S
     @Override
     public String toString() {
         String s = "";
-        s += "cmdLineOption [" + cmdLineOption + "]\n";
-        s += "cmdLineValue [" + cmdLineValue + "]\n";
+        //s += "OPTION: " + cmdLineOption + " & VALUE: " + cmdLineValue;
+        s += "\n\t\tOPTION : [ " + cmdLineOption + " ]\n";
+        s += "\t\tVALUE  : [ " + cmdLineValue + " ]\n";
         return s;
     }
 
@@ -68,7 +69,7 @@ public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements S
 
         @Override
         public String getDisplayName() {
-            return "ZAP command Line";
+            return "ZAP Command Line";
         }
     }
 }

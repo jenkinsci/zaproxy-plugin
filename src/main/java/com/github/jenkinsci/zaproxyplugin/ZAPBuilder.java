@@ -63,6 +63,7 @@ public class ZAPBuilder extends Builder {
         this.zaproxy = zaproxy;
         this.zapHost = zapHost;
         this.zapPort = zapPort;
+        this.zaproxy.setStartZAPFirst(startZAPFirst);
         this.zaproxy.setZapHost(zapHost);
         this.zaproxy.setZapPort(zapPort);
 
@@ -102,13 +103,14 @@ public class ZAPBuilder extends Builder {
     @Override
     public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
 
-        listener.getLogger().println("------- START Replace environment variables -------");
-
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] START PRE-BUILD ENVIRONMENT VARIABLE REPLACEMENT", Utils.ZAP);
+        
         /* Replaces the environment variables with the corresponding values */
         String zapHost = zaproxy.getZapHost();
-        if (zapHost == null || zapHost.isEmpty()) throw new IllegalArgumentException("ZAP Host is missing");
+        if (zapHost == null || zapHost.isEmpty()) throw new IllegalArgumentException("ZAP HOST IS MISSING");
         String zapPort = zaproxy.getZapPort();
-        if (zapPort == null || zapPort.isEmpty()) throw new IllegalArgumentException("ZAP Port is missing");
+        if (zapPort == null || zapPort.isEmpty()) throw new IllegalArgumentException("ZAP PORT IS MISSING");
         String zapSettingsDir = zaproxy.getZapSettingsDir();
         String contextName = zaproxy.getContextName();
         String includedURL = zaproxy.getIncludedURL();
@@ -132,7 +134,6 @@ public class ZAPBuilder extends Builder {
                 cmdLinesZap.add(new ZAPCmdLine(applyMacro(build, listener, cmdLineZap.getCmdLineOption()), applyMacro(build, listener, cmdLineZap.getCmdLineValue())));
         }
         catch (InterruptedException e1) {
-
             listener.error(ExceptionUtils.getStackTrace(e1));
         }
 
@@ -149,29 +150,33 @@ public class ZAPBuilder extends Builder {
         zaproxy.setEvaluatedSessionFilename(sessionFilename);
         zaproxy.setEvaluatedCmdLinesZap(cmdLinesZap);
 
-        listener.getLogger().println("ZapHost : " + zapHost);
-        listener.getLogger().println("ZapPort : " + zapPort);
-        listener.getLogger().println("");
-        listener.getLogger().println("zapSettingsDir : " + zapSettingsDir);
-        listener.getLogger().println("");
-        listener.getLogger().println("ContextName : " + contextName);
-        listener.getLogger().println("IncludedURL : " + includedURL);
-        listener.getLogger().println("ExcludedURL : " + excludedURL);
-        listener.getLogger().println("");
-        listener.getLogger().println("TargetURL : " + targetURL);
-        listener.getLogger().println("");
-        listener.getLogger().println("ReportName : " + reportName);
-        listener.getLogger().println("");
-        listener.getLogger().println("SessionFilename : " + sessionFilename);
-        listener.getLogger().println("");
-        listener.getLogger().println("CmdLInesZap : " + cmdLinesZap);
+        Utils.loggerMessage(listener, 1, "HOST = [ {0} ]", zapHost);
+        Utils.loggerMessage(listener, 1, "PORT = [ {0} ]", zapPort);
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 1, "ZAP SETTINGS DIRECTORY = [ {0} ]", zapSettingsDir);
+        Utils.loggerMessage(listener, 1, "CONTEXT NAME = [ {0} ]", contextName);
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 1, "INCLUDE IN CONTEXT = [ {0} ]", includedURL.trim().replace("\n", ", "));
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 1, "EXCLUDE FROM CONTEXT = [ {0} ]", excludedURL.trim().replace("\n", ", "));
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 1, "STARTING POINT (URL) = [ {0} ]", targetURL);
+        Utils.loggerMessage(listener, 1, "REPORT FILENAME = [ {0} ]", reportName);
+        Utils.loggerMessage(listener, 1, "SESSION FILENAME = [ {0} ]", sessionFilename);
+        Utils.lineBreak(listener);
+        // Utils.loggerMessage(listener, 1, "COMMAND LINE = [ {0} ] ", cmdLinesZap.toString().trim().substring(1, cmdLinesZap.toString().trim().length() - 1));
+        Utils.loggerMessage(listener, 1, "COMMAND LINE = {0}", cmdLinesZap.toString().trim().substring(1, cmdLinesZap.toString().trim().length() - 1).replace(",", ""));
 
+        if (cmdLinesZap.isEmpty()) Utils.lineBreak(listener);
+        // MAYBE ADD environment variables for script param's
         // ArrayList<ZAPCmdLine> cmdLinesZap= new ArrayList<ZAPCmdLine>(zaproxy.getCmdLinesZAP().size());
-
-        listener.getLogger().println("------- END Replace environment variables -------");
+        Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD ENVIRONMENT VARIABLE REPLACEMENT", Utils.ZAP);
+        Utils.lineBreak(listener);
 
         if (startZAPFirst) {
-            listener.getLogger().println("------- START Prebuild -------");
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] START PRE-BUILD STEP", Utils.ZAP);
+            Utils.lineBreak(listener);
 
             try {
                 Launcher launcher = null;
@@ -192,7 +197,9 @@ public class ZAPBuilder extends Builder {
                 listener.error(ExceptionUtils.getStackTrace(e));
                 return false;
             }
-            listener.getLogger().println("------- END Prebuild -------");
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] END PRE-BUILD STEP", Utils.ZAP);
+            Utils.lineBreak(listener);
         }
         return true;
     }
@@ -200,10 +207,10 @@ public class ZAPBuilder extends Builder {
     /** Method called when the build is launching */
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) {
-
-        listener.getLogger().println("Perform ZAProxy");
-
         if (!startZAPFirst) try {
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] START BUILD STEP", Utils.ZAP);
+            Utils.lineBreak(listener);
             proc = zaproxy.startZAP(build, listener, launcher);
         }
         catch (Exception e) {
@@ -216,7 +223,10 @@ public class ZAPBuilder extends Builder {
         try {
             res = build.getWorkspace().act(new ZAPDriverCallable(this.zaproxy, listener));
             proc.joinWithTimeout(60L, TimeUnit.MINUTES, listener);
-
+            Utils.lineBreak(listener);
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ SUCCESSFUL ]", Utils.ZAP);
+            Utils.lineBreak(listener);
         }
         catch (Exception e) {
             e.printStackTrace();

@@ -211,7 +211,7 @@
             </f:entry>
         </f:optionalBlock>
 
-        <f:optionalBlock title="${%Create JIRA Issues - USE AT YOUR OWN RISK AND DISCRETION, SEE HELP FOR DETAILS}" field="createJiras" inline="true">
+        <f:optionalBlock title="${%Create JIRA Issues - USE AT YOUR OWN RISK AND DISCRETION, SEE HELP FOR DETAILS}" field="jiraCreate" inline="true">
             <f:entry>
                 <table width="100%">
                     <f:entry title="${%Project Key}" field="jiraProjectKey">
@@ -221,10 +221,10 @@
                         <f:textbox clazz="required" />
                     </f:entry>
 
-                    <f:optionalBlock title="${%Export High Alerts}" field="alertHigh" inline="true" />
-                    <f:optionalBlock title="${%Export Medium Alerts}" field="alertMedium" inline="true" />
-                    <f:optionalBlock title="${%Export Low Alerts}" field="alertLow" inline="true" />
-                    <f:optionalBlock title="${%Filter Issue URL's by Resource Type}" field="filterIssuesByResourceType" inline="true" />
+                    <f:optionalBlock title="${%Export High Alerts}" field="jiraAlertHigh" inline="true" />
+                    <f:optionalBlock title="${%Export Medium Alerts}" field="jiraAlertMedium" inline="true" />
+                    <f:optionalBlock title="${%Export Low Alerts}" field="jiraAlertLow" inline="true" />
+                    <f:optionalBlock title="${%Filter Issue URL's by Resource Type}" field="jiraFilterIssuesByResourceType" inline="true" />
                 </table>
             </f:entry>
         </f:optionalBlock>
