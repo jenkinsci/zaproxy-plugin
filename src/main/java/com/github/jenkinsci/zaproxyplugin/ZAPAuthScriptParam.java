@@ -23,8 +23,13 @@ import hudson.model.Descriptor;
 /**
  * This object allows to add a script parameters dynamically.
  *
- * @author mabdelmoez
- *
+ * @author Ludovic Roucoux
+ * @author Johann Ollivier-Lapeyre
+ * @author Thilina Madhusanka
+ * @author Abdellah Azougarh
+ * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
+ * @author Tanguy de Lignières
  */
 public class ZAPAuthScriptParam extends AbstractDescribableImpl<ZAPAuthScriptParam> implements Serializable {
 

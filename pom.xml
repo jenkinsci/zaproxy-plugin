@@ -65,13 +65,11 @@
         <url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
         <tag>zaproxy-2.0.0</tag>
     </scm>
-
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
             <url>http://repo.jenkins-ci.org/public/</url>
         </repository>
-
     </repositories>
     <pluginRepositories>
         <pluginRepository>

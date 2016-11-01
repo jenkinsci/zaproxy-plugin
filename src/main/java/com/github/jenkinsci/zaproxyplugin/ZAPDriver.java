@@ -24,8 +24,8 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +43,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
+import org.zaproxy.clientapi.core.ApiResponseSet;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
 
@@ -121,6 +122,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String ZAP_PROG_NAME_BAT = "zap.bat";
     private static final String ZAP_PROG_NAME_SH = "zap.sh";
 
+    private static final int TREAD_SLEEP = 5000;
+    
     @DataBoundConstructor
     public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout, 
             String zapSettingsDir, 
@@ -134,7 +137,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly, 
             boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy, 
             boolean generateReports, List<String> selectedReportFormats, String reportFilename, 
-            boolean createJiras, String jiraProjectKey, String jiraAssignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType, 
+            boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType, 
             List<ZAPCmdLine> cmdLinesZAP) {
 
         /* Startup */
@@ -201,13 +204,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.reportFilename = reportFilename;
 
         /* Finalize Run >> Create JIRA Issue(s) */
-        this.createJiras = createJiras;
+        this.jiraCreate = jiraCreate;
         this.jiraProjectKey = jiraProjectKey;
         this.jiraAssignee = jiraAssignee;
-        this.alertHigh = alertHigh;
-        this.alertMedium = alertMedium;
-        this.alertLow = alertLow;
-        this.filterIssuesByResourceType = filterIssuesByResourceType;
+        this.jiraAlertHigh = jiraAlertHigh;
+        this.jiraAlertMedium = jiraAlertMedium;
+        this.jiraAlertLow = jiraAlertLow;
+        this.jiraFilterIssuesByResourceType = jiraFilterIssuesByResourceType;
         /* Other */
         this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPCmdLine>(cmdLinesZAP) : new ArrayList<ZAPCmdLine>();
 
@@ -299,40 +302,16 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "\n";
         s += "Finalize Run >> Create JIRA Issue(s)\n";
         s += "-------------------------------------------------------\n";
-        s += "createJiras [" + createJiras + "]\n";
+        s += "jiraCreate [" + jiraCreate + "]\n";
         s += "jiraBaseURL [" + jiraBaseURL + "]\n";
         s += "jiraUsername [" + jiraUsername + "]\n";
         s += "jiraProjectKey [" + jiraProjectKey + "]\n";
         s += "jiraAssignee [" + jiraAssignee + "]\n";
-        s += "alertHigh [" + alertHigh + "]\n";
-        s += "alertMedium [" + alertMedium + "]\n";
-        s += "alertLow [" + alertLow + "]\n";
-        s += "filterIssuesByResourceType[" + filterIssuesByResourceType + "]\n";
+        s += "jiraAlertHigh [" + jiraAlertHigh + "]\n";
+        s += "jiraAlertMedium [" + jiraAlertMedium + "]\n";
+        s += "jiraAlertLow [" + jiraAlertLow + "]\n";
+        s += "jiraFilterIssuesByResourceType[" + jiraFilterIssuesByResourceType + "]\n";
         return s;
-    }
-
-    /**
-     * Message builder method that accepts a list of arguments. Used for internationalized messages.
-     *
-     * @param listener
-     *            of TYPE BuildListener DESC: the listener to display log during the job execution in Jenkin
-     * @param message
-     *            of TYPE String DESC: The message to display in the log, injected values are indicated by {0}, {1}, etc.
-     * @param args
-     *            of TYPE String... DESC: The injected values to go into the message.
-     */
-    private void loggerMessage(BuildListener listener, String message, String... args) {
-        MessageFormat mf = new MessageFormat(message);
-        listener.getLogger().println(mf.format(args));
-    }
-
-    // TODO
-    private String indent(String str, int indent) {
-        String temp = "";
-        for (int i = 0; i < indent; i++)
-            for (int j = 0; j < 4; j++)
-                temp = temp + "\0";
-        return temp + str;
     }
 
     /**
@@ -368,7 +347,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             node = build.getBuiltOn();
             for (ToolDescriptor<?> desc : ToolInstallation.all())
                 for (ToolInstallation tool : desc.getInstallations())
-                    if (tool.getName().equals(toolUsed)) {
+                    if (tool.getName().equals(this.toolUsed)) {
                         if (tool instanceof NodeSpecific) tool = (ToolInstallation) ((NodeSpecific<?>) tool).forNode(node, listener);
                         if (tool instanceof EnvironmentSpecific) tool = (ToolInstallation) ((EnvironmentSpecific<?>) tool).forEnvironment(env);
                         installPath = tool.getHome();
@@ -376,7 +355,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                         return installPath;
                     }
         }
-        else installPath = build.getEnvironment(listener).get(zapHome);
+        else installPath = build.getEnvironment(listener).get(this.zapHome);
         return installPath;
     }
 
@@ -415,62 +394,60 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      */
     private void checkParams(AbstractBuild<?, ?> build, BuildListener listener) throws IllegalArgumentException, IOException, InterruptedException {
         zapProgram = retrieveZapHomeWithToolInstall(build, listener);
+        Utils.loggerMessage(listener, 0, "[{0}] VARIABLE VALIDATION AND ENVIRONMENT INJECTOR EXPANSION (EXP)", Utils.ZAP);
+        
+        if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP PATH IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
+        else Utils.loggerMessage(listener, 1, "ZAP PATH = [ {0} ]", this.zapProgram);
 
-        if (zapProgram == null || zapProgram.isEmpty()) throw new IllegalArgumentException("zapProgram is missing");
-        else loggerMessage(listener, "zapProgram = [ {0} ]", zapProgram);
-
+        /* System Environment and Build Environment variables will be expanded already, the following step will expand Environment Injector variables. Note: cannot be expanded in pre-build step. */
         EnvVars envVars = build.getEnvironment(listener);
 
-        // The system environment variable will have been expanded at this point already, if using
-        // Environment Injector plugin then you need to expand once more.
-        // excludedURL will look like [${EXCLUDED_A}, derp.com, ${EXCLUDED_B}, ${TEST_ID}]
-        // while evaluatedExcludedURL will look like [${EXCLUDED_A}, derp.com, ${EXCLUDED_B}, www.systemenv.com]
-        // it does not matter which you expand in this case because neither can work if 'Start ZAProxy in a pre-build step' is chosen
+        this.evaluatedZapHost = envVars.expand(this.evaluatedZapHost);
+        if (this.evaluatedZapHost == null || this.evaluatedZapHost.isEmpty()) throw new IllegalArgumentException("ZAP HOST IS MISSING, PROVIDED [ " + this.evaluatedZapHost + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) HOST = [ {0} ]", this.evaluatedZapHost);
 
-        evaluatedZapHost = envVars.expand(evaluatedZapHost);
-        if (evaluatedZapHost == null || evaluatedZapHost.isEmpty()) throw new IllegalArgumentException("ZAP Host is missing");
-        else loggerMessage(listener, "Expanded host = [ {0} ]", evaluatedZapHost);
+        this.evaluatedZapPort = Integer.parseInt(envVars.expand(String.valueOf(this.evaluatedZapPort)));
+        if (this.evaluatedZapPort < 0) throw new IllegalArgumentException("ZAP PORT IS LESS THAN 0, PROVIDED [ " + this.evaluatedZapPort + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) PORT = [ {0} ]", String.valueOf(this.evaluatedZapPort));
 
-        evaluatedZapPort = Integer.parseInt(envVars.expand(String.valueOf(evaluatedZapPort)));
-        if (evaluatedZapPort < 0) throw new IllegalArgumentException("ZAP Port is less than 0");
-        else loggerMessage(listener, "Expanded port = [ {0} ]", String.valueOf(evaluatedZapPort));
+        this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
+        if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
+        else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", envVars.expand(this.evaluatedContextName));
 
-        evaluatedContextName = envVars.expand(evaluatedContextName);
-        if (evaluatedContextName == null || evaluatedContextName.isEmpty()) throw new IllegalArgumentException("Expanded contextName is missing " + evaluatedContextName);
-        else loggerMessage(listener, "Expanded contextName = [ {0} ]", envVars.expand(evaluatedContextName));
+        this.evaluatedZapSettingsDir = envVars.expand(this.evaluatedZapSettingsDir);
+        if (this.evaluatedZapSettingsDir == null || this.evaluatedZapSettingsDir.isEmpty()) throw new IllegalArgumentException("ZAP SETTINGS DIRECTORY IS MISSING, PROVIDED [ " + this.evaluatedZapSettingsDir + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) ZAP SETTINGS DIRECTORY = [ {0} ]", envVars.expand(this.evaluatedZapSettingsDir));
 
-        evaluatedZapSettingsDir = envVars.expand(evaluatedZapSettingsDir);
-        if (evaluatedZapSettingsDir == null || evaluatedZapSettingsDir.isEmpty()) throw new IllegalArgumentException("Expanded zapSettingsDir is missing " + evaluatedZapSettingsDir);
-        else loggerMessage(listener, "Expanded zapSettingsDir = [ {0} ]", envVars.expand(evaluatedZapSettingsDir));
+        this.evaluatedIncludedURL = envVars.expand(this.evaluatedIncludedURL);
+        if (this.evaluatedIncludedURL == null || this.evaluatedIncludedURL.isEmpty()) throw new IllegalArgumentException("INCLUDE IN CONTEXT IS MISSING, PROVIDED [ " + this.evaluatedIncludedURL + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) INCLUDE IN CONTEXT = [ {0} ]", envVars.expand(this.evaluatedIncludedURL).trim().replace("\n", ", "));
 
-        evaluatedIncludedURL = envVars.expand(evaluatedIncludedURL);
-        if (evaluatedIncludedURL == null || evaluatedIncludedURL.isEmpty()) throw new IllegalArgumentException("Expanded includedURL is missing " + evaluatedIncludedURL);
-        else loggerMessage(listener, "Expanded includeURL = [ {0} ]", envVars.expand(evaluatedIncludedURL));
+        this.evaluatedExcludedURL = envVars.expand(this.evaluatedExcludedURL);
+        Utils.loggerMessage(listener, 1, "(EXP) EXCLUDE FROM CONTEXT = [ {0} ]", envVars.expand(this.evaluatedExcludedURL).trim().replace("\n", ", "));
 
-        evaluatedExcludedURL = envVars.expand(evaluatedExcludedURL);
-        loggerMessage(listener, "Expanded excludedURL = [ {0} ]", envVars.expand(evaluatedExcludedURL));
+        this.evaluatedTargetURL = envVars.expand(this.evaluatedTargetURL);
+        if ((this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) && !this.startZAPFirst) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
+        else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
 
-        evaluatedTargetURL = envVars.expand(evaluatedTargetURL);
-        if (evaluatedTargetURL == null || evaluatedTargetURL.isEmpty()) throw new IllegalArgumentException("Expanded targetURL is missing " + evaluatedTargetURL);
-        else loggerMessage(listener, "Expanded targetURL = [ {0} ]", evaluatedTargetURL);
+        this.evaluatedSessionFilename = envVars.expand(this.evaluatedSessionFilename);
+        Utils.loggerMessage(listener, 1, "(EXP) SESSION FILENAME = [ {0} ]", envVars.expand(this.evaluatedSessionFilename));
 
-        evaluatedSessionFilename = envVars.expand(evaluatedSessionFilename);
-        loggerMessage(listener, "Expanded sessionFilename = [ {0} ]", envVars.expand(evaluatedSessionFilename));
-
-        /* createJiras is enabled */
-        if (getcreateJiras() == true) {
+        /* jiraCreate is enabled */
+        if (this.jiraCreate) {
 
             /* Minimum : the url is needed */
-            if (jiraBaseURL == null || jiraBaseURL.isEmpty()) throw new IllegalArgumentException("Jira Base URL not Found");
-            else loggerMessage(listener, "jiraBaseURL = [ {0} ]", jiraBaseURL);
+            if (this.jiraBaseURL == null || this.jiraBaseURL.isEmpty()) throw new IllegalArgumentException("JIRA BASE URL IS MISSING, PROVIDED [ " + this.jiraBaseURL + " ]");
+            else Utils.loggerMessage(listener, 1, "JIRA BASE URL = [ {0} ]", this.jiraBaseURL);
 
             /* the username can be empty */
-            if (jiraUsername == null) throw new IllegalArgumentException("Jira User name not Found");
-            else loggerMessage(listener, "jiraUsername = [ {0} ]", jiraUsername);
+            if (this.jiraUsername == null) throw new IllegalArgumentException("JIRA USERNAME IS MISSING, PROVIDED [ " + this.jiraUsername + " ]");
+            else Utils.loggerMessage(listener, 1, "JIRA USERNAME = [ {0} ]", this.jiraUsername);
 
             /* the password can be empty */
-            if (jiraPassword == null) throw new IllegalArgumentException("Jira password not Found");
+            if (this.jiraPassword == null) throw new IllegalArgumentException("JIRA PASSWORD IS MISSING");
+            else Utils.loggerMessage(listener, 1, "JIRA PASSWORD = [ OK ]");
         }
+        Utils.lineBreak(listener);
     }
 
     /**
@@ -497,27 +474,27 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /* Contains the absolute path to ZAP program */
         FilePath zapPathWithProgName = new FilePath(ws.getChannel(), zapProgram + getZAPProgramNameWithSeparator(build));
-        loggerMessage(listener, "Start ZAP [ {0} ]", zapPathWithProgName.getRemote());
+        Utils.loggerMessage(listener, 0, "[{0}] CONFIGURE RUN COMMANDS for [ {1} ]", Utils.ZAP, zapPathWithProgName.getRemote());
 
         /* Command to start ZAProxy with parameters */
         List<String> cmd = new ArrayList<String>();
         cmd.add(zapPathWithProgName.getRemote());
         cmd.add(CMD_LINE_DAEMON);
         cmd.add(CMD_LINE_HOST);
-        cmd.add(evaluatedZapHost);
+        cmd.add(this.evaluatedZapHost);
         cmd.add(CMD_LINE_PORT);
-        cmd.add(String.valueOf(evaluatedZapPort));
+        cmd.add(String.valueOf(this.evaluatedZapPort));
         cmd.add(CMD_LINE_CONFIG);
         cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 
         /* Set the default directory used by ZAP if it's defined and if a scan is provided */
-        if (getActiveScanURL() && evaluatedZapSettingsDir != null && !evaluatedZapSettingsDir.isEmpty()) {
+        if (getActiveScanURL() && this.evaluatedZapSettingsDir != null && !this.evaluatedZapSettingsDir.isEmpty()) {
             cmd.add(CMD_LINE_DIR);
-            cmd.add(evaluatedZapSettingsDir);
+            cmd.add(this.evaluatedZapSettingsDir);
         }
 
         /* Adds command line arguments if it's provided */
-        if (!evaluatedCmdLinesZap.isEmpty()) addZapCmdLine(cmd);
+        if (!this.evaluatedCmdLinesZap.isEmpty()) addZapCmdLine(cmd, this.evaluatedCmdLinesZap);
 
         EnvVars envVars = build.getEnvironment(listener);
         /* on Windows environment variables are converted to all upper case, but no such conversions are done on Unix, so to make this cross-platform, convert variables to all upper cases. */
@@ -529,11 +506,16 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         computeJdkToUse(build, listener, envVars);
 
         /* Launch ZAP process on remote machine (on master if no remote machine) */
+        Utils.loggerMessage(listener, 0, "[{0}] EXECUTE LAUNCH COMMAND", Utils.ZAP);
         Proc proc = launcher.launch().cmds(cmd).envs(envVars).stdout(listener).pwd(workDir).start();
 
         /* Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely */
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ START ]", Utils.ZAP);
         build.getWorkspace().act(new WaitZAPDriverInitCallable(this, listener));
-
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ SUCCESSFUL ]", Utils.ZAP);
+        Utils.lineBreak(listener);
         return proc;
     }
 
@@ -573,8 +555,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @param list
      *            of TYPE List<String> DESC: the list to attach ZAP command line to
      */
-    private void addZapCmdLine(List<String> list) {
-        for (ZAPCmdLine zapCmd : evaluatedCmdLinesZap) {
+    private void addZapCmdLine(List<String> list, ArrayList<ZAPCmdLine> cmdList) {
+        for (ZAPCmdLine zapCmd : cmdList) {
             if (zapCmd.getCmdLineOption() != null && !zapCmd.getCmdLineOption().isEmpty()) list.add(zapCmd.getCmdLineOption());
             if (zapCmd.getCmdLineValue() != null && !zapCmd.getCmdLineValue().isEmpty()) list.add(zapCmd.getCmdLineValue());
         }
@@ -586,7 +568,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @param s
      *            stringbuilder to attach authentication script parameter
      */
-    private void addZAPAuthScriptParam(StringBuilder s) throws UnsupportedEncodingException {
+    private void addZAPAuthScriptParam(ArrayList<ZAPAuthScriptParam> authScriptParams, StringBuilder s) throws UnsupportedEncodingException {
         for (ZAPAuthScriptParam authScriptParam : authScriptParams) {
             if (authScriptParam.getScriptParameterName() != null && !authScriptParam.getScriptParameterName().isEmpty()) s.append("&" + URLEncoder.encode(authScriptParam.getScriptParameterName(), "UTF-8") + "=");
             if (authScriptParam.getScriptParameterValue() != null && !authScriptParam.getScriptParameterValue().isEmpty()) s.append(URLEncoder.encode(authScriptParam.getScriptParameterValue(), "UTF-8").toString());
@@ -662,15 +644,15 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws IOException
      */
-    private void saveReport(ZAPReport reportFormat, BuildListener listener, FilePath workspace, ClientApi clientApi) throws IOException, ClientApiException {
-        final String fullFileName = evaluatedReportFilename + "." + reportFormat.getFormat();
+    private void saveReport(ClientApi clientApi, BuildListener listener, FilePath workspace, ZAPReport reportFormat, String filename) throws IOException, ClientApiException {
+        final String fullFileName = filename + "." + reportFormat.getFormat();
         File reportsFile = new File(workspace.getRemote(), fullFileName);
         FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
-        loggerMessage(listener, "File [ {0} ] saved", reportsFile.getAbsolutePath());
+        Utils.loggerMessage(listener, 1, "[ {0} ] SAVED TO [ {1} ]", reportFormat.getFormat().toUpperCase(), reportsFile.getAbsolutePath());
     }
 
     /**
-     * Execute ZAPJ method following build's setup and stop ZAP at the end.
+     * Execute ZAPJ method following build's setup and stop ZAP at the end. Note: No param's to executeZAP method since they would also need to be accessible in builder, somewhat redundant.
      *
      * @param workspace
      *            of TYPE: FilePath DESC: a {@link FilePath} representing the build's workspace
@@ -678,40 +660,22 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of TYPE: BuildListener DESC: the listener to display log during the job execution in Jenkins
      * @return of TYPE: boolean DESC: true if no exception is caught, false otherwise.
      */
-    // public boolean executeZAP(FilePath workspace, BuildListener listener) {
-    // ClientApi zapClientAPI = new ClientApi(zapHost, zapPort);
-    // boolean buildSuccess = true;
-    // loggerMessage(listener, "zap home : { 0 }", getZapHome());
-    // loggerMessage(listener, "timeout in sec : { 0 }", String.valueOf(getTimeout()));
-    // loggerMessage(listener, "session file : { 0 }", getFilenameLoadSession());
-    // loggerMessage(listener, "context name : { 0 }", getContextName());
-    // loggerMessage(listener, "include url : { 0 }", getIncludedURL());
-    // loggerMessage(listener, "exclude url : { 0 }", getExcludedURL());
-    // loggerMessage(listener, "authMode : { 0 }", String.valueOf(getAuthMode()));
-    // loggerMessage(listener, "spider : { 0 }", String.valueOf(getSpiderScanURL()));
-    // loggerMessage(listener, "ajax : { 0 }", String.valueOf(getAjaxSpiderURL()));
-    // loggerMessage(listener, "active : { 0 }", String.valueOf(getActiveScanURL()));
-    //
-    // return buildSuccess;
-    // }
     public boolean executeZAP(FilePath workspace, BuildListener listener) {
-        ClientApi zapClientAPI = new ClientApi(evaluatedZapHost, evaluatedZapPort);
+        ClientApi zapClientAPI = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort);
         boolean buildSuccess = true;
 
         try {
-            /*
-             * ===== | LOAD SESSION | =====
-             */
-            if (autoLoadSession && loadSession != null && loadSession.length() != 0) {
-                File sessionFile = new File(loadSession);
-                loggerMessage(listener, "Load session at [ {0} ]", sessionFile.getAbsolutePath());
+            /* LOAD SESSION */
+            if (this.autoLoadSession && this.loadSession != null && this.loadSession.length() != 0) {
+                File sessionFile = new File(this.loadSession);
+                Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION AT: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
+
                 /*
                  * @class org.zaproxy.clientapi.gen.Core
                  * 
                  * @method loadSession
                  * 
                  * @param String apikey
-                 * 
                  * @param String name
                  * 
                  * @throws ClientApiException
@@ -719,201 +683,88 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 zapClientAPI.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
             }
             else if (!autoLoadSession) {
-                loggerMessage(listener, "Skip loadSession");
-                if (sessionFilename == null || sessionFilename.isEmpty()) {
+                Utils.loggerMessage(listener, 0, "[{0}] SKIP SESSION LOADING", Utils.ZAP);
+                if (this.sessionFilename == null || this.sessionFilename.isEmpty()) {
                     buildSuccess = false;
-                    listener.getLogger().println("Persist Session: No Session has been specified, build marked as failure.");                
+                    Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
                 }
             }
             else {
                 buildSuccess = false;
-                loggerMessage(listener, "Load Session: No Session has been specified, build marked as failure.");
+                Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
             }
+            Utils.lineBreak(listener);
 
-            /*
-             * ===== | SET UP CONTEXT | =====
-             */
-
-            // setup context
-            
+            /* SET UP CONTEXT  */
             if (buildSuccess) {
-                this.contextId = setUpContext(listener, evaluatedContextName, evaluatedIncludedURL, evaluatedExcludedURL, zapClientAPI);
+                this.contextId = setUpContext(listener, zapClientAPI, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
-                loggerMessage(listener, "AUTHENTICATION ENABLED : {0}", String.valueOf(authMode).toUpperCase());
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
+                Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
+                Utils.lineBreak(listener);
+                if (authMode) if (authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, zapClientAPI, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                else if (authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, zapClientAPI, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
-                // if (getSpiderScanURL()) {
-                // if (!authMode) {
-                // loggerMessage(listener, "Spider the site [ {0} ]", evaluatedTargetURL);
-                // }
-                // else if (authMode) {
-                // loggerMessage(listener, "Spider the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // }
-                // spiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else {
-                // if (!authMode) {
-                // loggerMessage(listener, "Skip spidering the site [ {0} ]", evaluatedTargetURL);
-                // }
-                // else if (authMode) {
-                // loggerMessage(listener, "Skip spidering the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // }
-                // }
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.spiderScanURL).toUpperCase());
+                spiderScanURL(listener, zapClientAPI, this.spiderScanURL, this.evaluatedTargetURL, this.contextName, this.contextId, this.userId, this.authMode, this.spiderScanRecurse, this.spiderScanSubtreeOnly, this.spiderScanMaxChildrenToCrawl);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.ajaxSpiderURL).toUpperCase());
+                ajaxSpiderURL(listener, zapClientAPI, this.ajaxSpiderURL, this.evaluatedTargetURL, this.ajaxSpiderInScopeOnly);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.activeScanURL).toUpperCase());
+                activeScanURL(listener, zapClientAPI, this.activeScanURL, this.evaluatedTargetURL, this.contextId, this.userId, this.authMode, this.activeScanPolicy, this.activeScanRecurse);
+                Utils.lineBreak(listener);
 
-                if (authMode) if (authMethod.equals(FORM_BASED)) setUpAuthentication(listener, zapClientAPI, loginURL, username, password, loggedInIndicator, extraPostData, authMethod, usernameParameter, passwordParameter, null, null);
-                else if (authMethod.equals(SCRIPT_BASED)) setUpAuthentication(listener, zapClientAPI, loggedInIndicator, username, password, loggedInIndicator, extraPostData, authMethod, null, null, authScript, protectedPages);
-                spiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                ajaxSpiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                scanURL(listener, zapClientAPI, evaluatedTargetURL);
-
-                // if (!authMode) {
-                // if (getSpiderScanURL()) {
-                // loggerMessage(listener, "Spider the site [ {0} ]", evaluatedTargetURL);
-                // spiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else loggerMessage(listener, "Skip spidering the site [ {0} ]", evaluatedTargetURL);
-                // }
-                // else if (authMode) {
-                // loggerMessage(listener, "Setting up Authentication");
-                //
-                // if (authMethod.equals(FORM_BASED)) setUpAuthentication(listener, zapClientAPI, loginURL, username, password, loggedInIndicator, extraPostData, authMethod, usernameParameter, passwordParameter, null, null);
-                // else if (authMethod.equals(SCRIPT_BASED)) setUpAuthentication(listener, zapClientAPI, loggedInIndicator, username, password, loggedInIndicator, extraPostData, authMethod, null, null, authScript, protectedPages);
-                //
-                // if (getSpiderScanURL()) {
-                // loggerMessage(listener, "Spider the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // spiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else loggerMessage(listener, "Skip spidering the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                //
-                // }
-
-                // If it's not authenticated scan
-                // if (!authMode) {
-                //
-                // loggerMessage(listener, "SCANMOD : NOT_AUTHENTICATED");
-                //
-                // Non authenticated mode : spider url, ajax spider url, scan url
-                /*
-                 * ===== | SPIDER URL | =====
-                 */
-                // if (getSpiderScanURL()) {
-                // loggerMessage(listener, "Spider the site [ {0} ]", evaluatedTargetURL);
-                // spiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else loggerMessage(listener, "Skip spidering the site [ {0} ]", evaluatedTargetURL);
-
-                /*
-                 * ===== | AJAX SPIDER URL | =====
-                 */
-                // if (getAjaxSpiderURL()) {
-                // loggerMessage(listener, "Ajax Spider the site [ {0} ]", evaluatedTargetURL);
-                // ajaxSpiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else loggerMessage(listener, "Skip Ajax spidering the site [ {0} ]", evaluatedTargetURL);
-
-                /*
-                 * ===== | SCAN URL | =====
-                 */
-                // if (getActiveScanURL()) {
-                // loggerMessage(listener, "Scan the site [ {0} ]", evaluatedTargetURL);
-                // scanURL(evaluatedTargetURL, listener, zapClientAPI);
-                // }
-                // else loggerMessage(listener, "Skip scanning the site [ {0} ]", evaluatedTargetURL);
-                // }
-
-                // else if (scanMode.equals("AUTHENTICATED")) {
-                // else if (authMode) {
-                // // Authenticated mod : spider url as user, ajax spider url as
-                // // user, scan url as user
-                // loggerMessage(listener, "SCANMOD : AUTHENTICATED");
-                // loggerMessage(listener, "SCANMOD : " + authMethod);
-
-                // loggerMessage(listener, "Setting up Authentication");
-
-                // if (authMethod.equals(FORM_BASED)) setUpAuthentication(listener, zapClientAPI, loginURL, username, password, loggedInIndicator, extraPostData, authMethod, usernameParameter, passwordParameter, null, null);
-                // else if (authMethod.equals(SCRIPT_BASED)) setUpAuthentication(listener, zapClientAPI, loggedInIndicator, username, password, loggedInIndicator, extraPostData, authMethod, null, null, authScript, protectedPages);
-
-                /*
-                 * ===== | SPIDER AS USER | =====
-                 */
-
-                // if (getSpiderScanURL()) {
-                // loggerMessage(listener, "Spider the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // spiderURLAsUser(listener, zapClientAPI, evaluatedTargetURL, contextId, userId);
-                // }
-                // else loggerMessage(listener, "Skip spidering the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-
-                /*
-                 * ===== | AJAX SPIDER URL AS USER | =====
-                 */
-                // if (getAjaxSpiderURL()) {
-                // loggerMessage(listener, "Ajax Spider the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // ajaxSpiderURL(listener, zapClientAPI, evaluatedTargetURL);
-                // }
-                // else loggerMessage(listener, "Skip Ajax spidering the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-
-                /*
-                 * ===== | SCAN URL AS USER | =====
-                 */
-                // if (getActiveScanURL()) {
-                // loggerMessage(listener, "Scan the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // scanURLAsUser(evaluatedTargetURL, listener, zapClientAPI, contextId, userId);
-                // }
-                // else loggerMessage(listener, "Skip scanning the site [ {0} ] as user [ {1} ]", evaluatedTargetURL, username);
-                // }
-
-                /*
-                 * ===== | SAVE REPORTS | =====
-                 */
-                if (generateReports) for (String format : selectedReportFormats) {
+                /* GENERATE REPORTS  */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] GENERATE REPORT(S) [ {1} ]", Utils.ZAP, String.valueOf(this.generateReports).toUpperCase());
+                if (generateReports) for (String format : this.selectedReportFormats) {
                     ZAPReport report = ZAPReportCollection.getInstance().getMapFormatReport().get(format);
-                    saveReport(report, listener, workspace, zapClientAPI);
+                    saveReport(zapClientAPI, listener, workspace, report, this.evaluatedReportFilename);
                 }
 
-                /*
-                 * ===== | CREATE JIRA ISSUES | =====
-                 */
-                if (createJiras) {
-                    loggerMessage(listener, "===== | Creating JIRA Tickets | =====");
+                /* CREATE JIRA ISSUES */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] CREATE JIRA ISSUES [ {1} ]", Utils.ZAP, String.valueOf(this.jiraCreate).toUpperCase());
+                if (this.jiraCreate) {
                     Map<String, String> map = null;
                     map = new HashMap<String, String>();
 
                     if (API_KEY != null) map.put("apikey", API_KEY);
-                    map.put("jiraBaseURL", jiraBaseURL);
-                    map.put("jiraUserName", jiraUsername);
-                    map.put("jiraPassword", jiraPassword);
-                    map.put("jiraProjectKey", jiraProjectKey);
-                    // map.put("jiraUserName",jiraUserName);
-                    map.put("jiraAssignee", jiraAssignee);
-                    map.put("high", returnCheckedStatus(alertHigh));
-                    map.put("medium", returnCheckedStatus(alertMedium));
-                    map.put("low", returnCheckedStatus(alertLow));
-                    map.put("filterIssuesByResourceType", returnCheckedStatus(filterIssuesByResourceType));
+                    map.put("jiraBaseURL", this.jiraBaseURL);
+                    map.put("jiraUserName", this.jiraUsername);
+                    map.put("jiraPassword", this.jiraPassword);
+                    map.put("jiraProjectKey", this.jiraProjectKey);
+                    map.put("jiraAssignee", this.jiraAssignee);
+                    map.put("high", returnCheckedStatus(this.jiraAlertHigh));
+                    map.put("medium", returnCheckedStatus(this.jiraAlertMedium));
+                    map.put("low", returnCheckedStatus(this.jiraAlertLow));
+                    map.put("filterIssuesByResourceType", returnCheckedStatus(this.jiraFilterIssuesByResourceType));
 
-                    loggerMessage(listener, "===== | Initialized Variables | =====");
-
-                    loggerMessage(listener, indent("Api key  : {0}", 1), API_KEY);
-                    loggerMessage(listener, indent("Base URL  : {0}", 1), jiraBaseURL);
-                    loggerMessage(listener, indent("UserName  : {0}", 1), jiraUsername);
-                    loggerMessage(listener, indent("Project key  : {0}", 1), jiraProjectKey);
-                    loggerMessage(listener, indent("Assignee  : {0}", 1), jiraAssignee);
-                    loggerMessage(listener, indent("Export High alerts  : {0}", 1), Boolean.toString(alertHigh));
-                    loggerMessage(listener, indent("Export Medium alerts  : {0}", 1), Boolean.toString(alertMedium));
-                    loggerMessage(listener, indent("Export Low alerts  : {0}", 1), Boolean.toString(alertLow));
-                    loggerMessage(listener, indent("Filter by resource Type  : {0}", 1), Boolean.toString(filterIssuesByResourceType));
+                    Utils.loggerMessage(listener, 1, "INITIALIZE JIRA VARIABLES", Utils.ZAP);
+                    Utils.loggerMessage(listener, 2, "API KEY [ {0} ]", API_KEY);
+                    Utils.loggerMessage(listener, 2, "BASE URL [ {0} ]", this.jiraBaseURL);
+                    Utils.loggerMessage(listener, 2, "USERNAME [ {0} ]", this.jiraUsername);
+                    Utils.loggerMessage(listener, 2, "PROJECT KEY [ {0} ]", this.jiraProjectKey);
+                    Utils.loggerMessage(listener, 2, "ASSIGNEE [ {0} ]", this.jiraAssignee);
+                    Utils.loggerMessage(listener, 2, "EXPORT HIGH ALERTS [ {0} ]", Boolean.toString(this.jiraAlertHigh).toUpperCase());
+                    Utils.loggerMessage(listener, 2, "EXPORT MEDIUM ALERTS [ {0} ]", Boolean.toString(this.jiraAlertMedium).toUpperCase());
+                    Utils.loggerMessage(listener, 2, "EXPORT LOW ALERTS [ {0} ]", Boolean.toString(this.jiraAlertLow).toUpperCase());
+                    Utils.loggerMessage(listener, 2, "FILTER BY RESOURCE TYPE [ {0} ]", Boolean.toString(this.jiraFilterIssuesByResourceType).toUpperCase());
 
                     try {
-
                         /*
                          * @class org.zaproxy.clientapi.core.ClientApi
                          * 
                          * @method callApi
                          * 
                          * @param String component
-                         * 
                          * @param String type
-                         * 
                          * @param String method
-                         * 
                          * @param Map<String, String> params
                          * 
                          * @throws ClientApiException
@@ -922,22 +773,20 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                     }
                     catch (ClientApiException e) {
-
                         listener.getLogger().println(e.getMessage());
                     }
 
                 }
-                else listener.getLogger().println("Skipped creating jiras");
+                else Utils.loggerMessage(listener, 1, "SKIP CREATING JIRA ISSUES");
 
-                /*
-                 * ===== | SAVE SESSION | =====
-                 */
-                if (!autoLoadSession) {
-                    if (sessionFilename != null && !sessionFilename.isEmpty()) {
-                        File sessionFile = new File(workspace.getRemote(), sessionFilename);
-                        listener.getLogger().println("Save session to [" + sessionFile.getAbsolutePath() + "]");
-
-                        // Path creation if it doesn't exist
+                /* PERSIST SESSION */
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION [ {1} ]", Utils.ZAP, String.valueOf(!this.autoLoadSession).toUpperCase());
+                if (!this.autoLoadSession) {
+                    if (this.sessionFilename != null && !this.sessionFilename.isEmpty()) {
+                        File sessionFile = new File(workspace.getRemote(), this.sessionFilename);
+                        Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION TO: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
+                        /* If the path does not exist, create it. */
                         if (!sessionFile.getParentFile().exists()) sessionFile.getParentFile().mkdirs();
 
                         /*
@@ -946,9 +795,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                          * @method saveSession
                          * 
                          * @param String apikey
-                         * 
                          * @param String name
-                         * 
                          * @param String overwrite
                          * 
                          * @throws ClientApiException
@@ -956,13 +803,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                         zapClientAPI.core.saveSession(API_KEY, sessionFile.getAbsolutePath(), "true");
                     }
                 }
-                else
-                {
-                    listener.getLogger().println("Skip persistSession because a session was loaded.");
-                }
+                else Utils.loggerMessage(listener, 1, "SKIP PERSISTINT A SESSION BECAUSE ONE WAS ALREADY LOADED.");
 
-                listener.getLogger().println("Total alerts = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-                listener.getLogger().println("Total messages = " + zapClientAPI.core.numberOfMessages("").toString(2));
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SUMMARY...", Utils.ZAP);
+                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                Utils.loggerMessage(listener, 1, "ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
+                String numberOfMessages = ((ApiResponseElement) zapClientAPI.core.numberOfMessages("")).getValue();
+                Utils.loggerMessage(listener, 1, "MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
             }
         }
         catch (Exception e) {
@@ -971,7 +819,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         finally {
             try {
-                // stopZAP(this, zapClientAPI, listener);
                 stopZAP(zapClientAPI, listener);
             }
             catch (ClientApiException e) {
@@ -1037,63 +884,75 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @return the context ID of the context
      * @throws ClientApiException
      */
-    private String setUpContext(BuildListener listener, String context, String includedURL, String excludedURL, ClientApi zapClientAPI) throws ClientApiException {
-
-        includedURL = includedURL.trim();
-
-        String contextName;
-        if (context == null || context.isEmpty()) contextName = "Jenkins Default Context";
-        else contextName = context;
-
-        // name of the Context to be created
-
-        // @Deprecated
-        // String contextURL="\\Q"+url+"\\E.*";//url to be added to the context
-        // (the same url given by the user to be scanned)
-        String contextURL = includedURL;// url to be added to the context (the
-                                        // same url given by the user to be
-                                        // scanned)
-
+    private String setUpContext(BuildListener listener, ClientApi zapClientAPI, String contextName, String includedURL, String excludedURL) throws ClientApiException {
         String contextIdTemp;
+        includedURL = includedURL.trim();
+        excludedURL = excludedURL.trim();
 
-        // Create new context
-        // method signature : newContext(String apikey,String contextname)
-        // throws ClientApiException
-        contextIdTemp = extractContextId(zapClientAPI.context.newContext(API_KEY, contextName));
-
-        /*
+        Utils.loggerMessage(listener, 0, "[{0}] CREATE NEW CONECT [ {1} ]", Utils.ZAP, contextName);
+        Utils.lineBreak(listener);
+        /**
          * @class org.zaproxy.clientapi.gen.Context
-         * 
-         * @method includeInContext
-         * 
+         * @method newContext
          * @param String apikey
-         * 
          * @param String contextname
-         * 
-         * @param String regex
-         * 
          * @throws ClientApiException
          */
-        zapClientAPI.context.includeInContext(API_KEY, contextName, contextURL);
-        listener.getLogger().println("URL " + includedURL + " added to Context [" + contextIdTemp + "]");
+        contextIdTemp = extractContextId(zapClientAPI.context.newContext(API_KEY, contextName));
 
-        // excluded urls from context
-        if (!excludedURL.equals("")) try {
-
-            String[] urls = excludedURL.split("\n");
-            String contextExcludedURL = "";// url to exclude from context like the log out url
+        /* INCLUDE URL(S) IN CONTEXT */
+        Utils.loggerMessage(listener, 0, "[{0}] INCLUDE IN CONTEXT", Utils.ZAP);
+        if (!includedURL.equals("")) try {
+            String[] urls = includedURL.split("\n");
+            String contextIncludedURL = "";
 
             for (int i = 0; i < urls.length; i++) {
                 urls[i] = urls[i].trim();
                 if (!urls[i].isEmpty()) {
-                    // contextExcludedURL="\\Q"+urls[i]+"\\E";
-                    contextExcludedURL = urls[i];
-                    zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
-                    listener.getLogger().println("URL exluded from context : " + urls[i]);
+                    contextIncludedURL = urls[i];
+                    /**
+                     * @class org.zaproxy.clientapi.gen.Context
+                     * @method includeInContext
+                     * @param String apikey
+                     * @param String contextname
+                     * @param String regex
+                     * @throws ClientApiException
+                     */
+                    zapClientAPI.context.includeInContext(API_KEY, contextName, contextIncludedURL);
+                    Utils.loggerMessage(listener, 1, "[ {0} ]", contextIncludedURL);
                 }
 
             }
+        }
+        catch (ClientApiException e) {
+            e.printStackTrace();
+            listener.error(ExceptionUtils.getStackTrace(e));
+        }
+        Utils.lineBreak(listener);
 
+        /* EXCLUDE URL(S) FROM CONTEXT */
+        Utils.loggerMessage(listener, 0, "[{0}] EXCLUDE FROM CONTEXT", Utils.ZAP);
+        if (!excludedURL.equals("")) try {
+            String[] urls = excludedURL.split("\n");
+            String contextExcludedURL = "";
+
+            for (int i = 0; i < urls.length; i++) {
+                urls[i] = urls[i].trim();
+                if (!urls[i].isEmpty()) {
+                    contextExcludedURL = urls[i];
+                    /**
+                     * @class org.zaproxy.clientapi.gen.Context
+                     * @method excludeFromContext
+                     * @param String apikey
+                     * @param String contextname
+                     * @param String regex
+                     * @throws ClientApiException
+                     */                    
+                    zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
+                    Utils.loggerMessage(listener, 1, "[ {0} ]", contextExcludedURL);
+                }
+
+            }
         }
         catch (ClientApiException e) {
             e.printStackTrace();
@@ -1127,7 +986,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      */
     private void setUpFormBasedAuth(BuildListener listener, ClientApi zapClientAPI, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
 
-        String loginRequestData = usernameParameter + "={%username%}&" + passwordParameter + "={%password%}&" + extraPostData;
+        String loginRequestData = usernameParameter + "={%username%}&" + passwordParameter + "={%password%}";
+        if (extraPostData.length() > 0) {
+            loginRequestData = loginRequestData + "&" + extraPostData;
+        }
 
         // set form based authentication method
         // Prepare the configuration in a format similar to how URL parameters
@@ -1158,18 +1020,26 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * 
          * @see https://github.com/zaproxy/zaproxy/wiki/FAQformauth which mentions the ZAP API (but the above example is probably more useful)
          */
+        Utils.loggerMessage(listener, 0, "[{0}] FORM BASED AUTH SET AS: {1}", Utils.ZAP, formBasedConfig.toString());
+        Utils.lineBreak(listener);
         zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "formBasedAuthentication", formBasedConfig.toString());
 
-        listener.getLogger().println("Authentication config: " + zapClientAPI.authentication.getAuthenticationMethod(contextId).toString(0));
+        Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
+        ApiResponseSet authData = (ApiResponseSet) zapClientAPI.authentication.getAuthenticationMethod(contextId);
+        List<String> authList = new ArrayList<String>(Arrays.asList(authData.toString(0).replace("\t", "").split("\\r?\\n")));
+        authList.remove(0);
+        authList.remove(authList.size() - 1);
 
-        // end set auth method
-        listener.getLogger().println("Form Based Authentication added to context");
+        for (String tmp : authList) {
+            Utils.loggerMessage(listener, 1, "{0}", tmp);
+        }
 
+        Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
         // add logged in indicator
         if (!loggedInIndicator.equals("")) {
             zapClientAPI.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
-            listener.getLogger().println("Logged in indicator " + loggedInIndicator + " added to context ");
         }
+        Utils.lineBreak(listener);
     }
 
     /**
@@ -1190,7 +1060,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws UnsupportedEncodingException
      * @throws ClientApiException
      */
-    private void setUpScriptBasedAuth(BuildListener listener, ClientApi zapClientAPI, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName, String protectedPages) throws UnsupportedEncodingException, ClientApiException {
+    private void setUpScriptBasedAuth(BuildListener listener, ClientApi zapClientAPI, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName, String protectedPages) throws UnsupportedEncodingException, ClientApiException {
 
         // set script based authentication method
         // Prepare the configuration in a format similar to how URL parameters
@@ -1199,7 +1069,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // URL encoded.
         StringBuilder scriptBasedConfig = new StringBuilder();
         scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
-        if (!authScriptParams.isEmpty()) addZAPAuthScriptParam(scriptBasedConfig);
+        if (!authScriptParams.isEmpty()) addZAPAuthScriptParam(authScriptParams, scriptBasedConfig);
 
         // StringBuilder scriptBasedConfig = new StringBuilder();
         // scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
@@ -1208,7 +1078,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // scriptBasedConfig.append("&extraPostData=").append(URLEncoder.encode(extraPostData, "UTF-8"));
         // {"methodConfigParams":[{"name":"scriptName","mandatory":"true"},{"name":"scriptConfigParams","mandatory":"false"}]}
 
-        listener.getLogger().println("Setting Script based authentication configuration as: " + scriptBasedConfig.toString());
+        Utils.loggerMessage(listener, 0, "[{0}] SCRIPT BASED AUTH SET AS: {1}", Utils.ZAP, scriptBasedConfig.toString());
+        Utils.lineBreak(listener);
 
         // TODO ASK ZAP DEV TEAM
         // ApiResponse
@@ -1216,24 +1087,33 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // apikey, String contextid, String authmethodname, String
         // authmethodconfigparams) throws ClientApiException
         // it's possible to know more of authmethodconfigparams for each authentication method with http://localhost:8080/JSON/authentication/view/getAuthenticationMethodConfigParams/?authMethodName=scriptBasedAuthentication
+        Utils.loggerMessage(listener, 0, "[{0}] LOAD SCRIPT FOR AUTHENTICATION", Utils.ZAP);
         zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication", scriptBasedConfig.toString());
-
+        
         /*
-         * 2:14:01 PM - thc202: and optional 2:14:56 PM - thc202: that value is the indentation level when generating the string representation of the API response 2:14:57 PM - thc202: https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/main/java/org/zaproxy/clientapi/core/ApiResponseSet.java#L61
-         *
-         *
+         * 2:14:01 PM - thc202: and optional 2:14:56 PM - thc202: that value is the Utils.indentation level when generating the string representation of the API response 2:14:57 PM - thc202: https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/main/java/org/zaproxy/clientapi/core/ApiResponseSet.java#L61
          */
 
         // https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/main/java/org/zaproxy/clientapi/core/ApiResponseSet.java#L61
 
         // no, the string (if outputted) would be shifted to the right one more level
-        listener.getLogger().println("Authentication config: " + zapClientAPI.authentication.getAuthenticationMethod(contextId).toString(0));
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
+        ApiResponseSet authData = (ApiResponseSet) zapClientAPI.authentication.getAuthenticationMethod(contextId);
+        List<String> authList = new ArrayList<String>(Arrays.asList(authData.toString(0).replace("\t", "").split("\\r?\\n")));
+        authList.remove(0);
+        authList.remove(authList.size() - 1);
 
-        // add logged in idicator
+        for (String tmp : authList) {
+            Utils.loggerMessage(listener, 1, "{0}", tmp);
+        }
+
+        Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
+        // add logged in indicator
         if (!loggedInIndicator.equals("")) {
-            listener.getLogger().println("---------------------------------------");
             zapClientAPI.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
         }
+        Utils.lineBreak(listener);
     }
 
     /**
@@ -1253,60 +1133,66 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private String setUpUser(BuildListener listener, ClientApi zapClientAPI, String username, String password, String contextId) throws ClientApiException, UnsupportedEncodingException {
+    private String setUpUser(BuildListener listener, ClientApi zapClientAPI, String contextId, String username, String password) throws ClientApiException, UnsupportedEncodingException {
 
         String userIdTemp;
-        // add new user and authentication details
-        // Make sure we have at least one user
-        // extract user id
-        userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, username));
-
-        // Prepare the configuration in a format similar to how URL parameters
-        // are formed. This
-        // means that any value we add for the configuration values has to be
-        // URL encoded.
-        StringBuilder userAuthConfig = new StringBuilder();
-        if ( authMethod.equals(SCRIPT_BASED)) { userAuthConfig.append("Username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&Password=").append(URLEncoder.encode(password, "UTF-8")); }
-        else { userAuthConfig.append("username=").append(URLEncoder.encode(username, "UTF-8")); userAuthConfig.append("&password=").append(URLEncoder.encode(password, "UTF-8")); }
-        String authCon = userAuthConfig.toString();
-        /*
+        /**
+         * Create a new user name and add it to the context specified by the id, at least one user is required in order to extract the id
+         * 
          * @class org.zaproxy.clientapi.gen.Users
-         * 
-         * @method setAuthenticationCredentials
-         * 
+         * @method newUser
          * @param String apikey
-         * 
          * @param String contextid
-         * 
-         * @param String String userid
-         * 
-         * @param String String authcredentialsconfigparams
-         * 
+         * @param String name
          * @throws ClientApiException
          */
-        zapClientAPI.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, authCon);
+        userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, username));
 
-        listener.getLogger().println("New user added. username :" + username);
+        /* The created user has key-value pair association (Session Properties > Context > Context Name > Users), not to be confused with Authentication but it is dependent on it.
+         *     form-based is hard coded in the api to lower case
+         *     script-based (zest) is hard coded to be Camel case
+         *     script-based (java script) is user defined, so force it to be Camel case to match zest
+         */
+        String tempUsernameParam = "username";
+        String tempPasswordParam = "password";
+        if (authMethod.equals(SCRIPT_BASED)) {
+            tempUsernameParam = "Username";
+            tempPasswordParam = "Password";
+        }
 
-        /*
+        /* Prepare the authentication configuration just like you would the query string (name/value pairs) for a URL GET request, remember to URL encode */
+        StringBuilder userAuthConfig = new StringBuilder();
+        userAuthConfig.append(tempUsernameParam).append("=").append(URLEncoder.encode(username, "UTF-8")).append("&").append(tempPasswordParam).append("=").append(URLEncoder.encode(password, "UTF-8"));
+
+        Utils.loggerMessage(listener, 0, "[{0}] USER CREATION", Utils.ZAP);
+        /**
          * @class org.zaproxy.clientapi.gen.Users
-         * 
-         * @method setUserEnabled
-         * 
+         * @method setAuthenticationCredentials
          * @param String apikey
-         * 
          * @param String contextid
-         * 
          * @param String String userid
-         * 
+         * @param String String authcredentialsconfigparams
+         * @throws ClientApiException
+         */
+        zapClientAPI.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, userAuthConfig.toString());
+
+        Utils.loggerMessage(listener, 1, "NEW USER ADDED [ SUCCESSFULLY ]", tempUsernameParam, username);
+        Utils.loggerMessage(listener, 2, "{0}: {1}", tempUsernameParam, username);
+        Utils.loggerMessage(listener, 2, "{0}: ****", tempPasswordParam);
+
+        /**
+         * @class org.zaproxy.clientapi.gen.Users
+         * @method setUserEnabled
+         * @param String apikey
+         * @param String contextid
+         * @param String String userid
          * @param String String enabled
-         * 
          * @throws ClientApiException
          */
         zapClientAPI.users.setUserEnabled(API_KEY, contextId, userIdTemp, "true");
-        listener.getLogger().println("User : " + username + " is now Enabled");
+        Utils.loggerMessage(listener, 1, "USER {0} IS NOW ENABLED", username);
 
-        // to make spidering and ajax spidering in authentication mod
+        /* Forces Authenticated User during SPIDER SCAN and AJAX SPIDER */
         setUpForcedUser(listener, zapClientAPI, contextId, userIdTemp);
 
         return userIdTemp;
@@ -1326,34 +1212,24 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws UnsupportedEncodingException
      */
     private void setUpForcedUser(BuildListener listener, ClientApi zapClientAPI, String contextid, String userid) throws ClientApiException, UnsupportedEncodingException {
-        /*
+        /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
-         * 
          * @method setForcedUser
-         * 
          * @param String apikey
-         * 
          * @param String contextid
-         * 
          * @param String userid
-         * 
          * @throws ClientApiException
          */
         zapClientAPI.forcedUser.setForcedUser(API_KEY, contextid, userid);
 
-        /*
+        /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
-         * 
          * @method setForcedUserModeEnabled
-         * 
          * @param String apikey
-         * 
          * @param boolean bool
-         * 
          * @throws ClientApiException
          */
         zapClientAPI.forcedUser.setForcedUserModeEnabled(API_KEY, true);
-
     }
 
     /**
@@ -1380,17 +1256,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws InterruptedException
      * @throws UnsupportedEncodingException
      */
-    private void setUpAuthentication(BuildListener listener, ClientApi zapClientAPI, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, String protectedPages) throws ClientApiException, UnsupportedEncodingException {
-
-        // setup context
-        // this.contextId=setUpContext(listener,url,zapClientAPI);
-
-        // set up authentication method
+    private String setUpAuthentication(BuildListener listener, ClientApi zapClientAPI, String contextId, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
         if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, zapClientAPI, contextId, loginURL, loggedInIndicator, extraPostData, usernameParameter, passwordParameter);
-        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, zapClientAPI, contextId, loginURL, loggedInIndicator, extraPostData, scriptName, protectedPages);
+        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, zapClientAPI, authScriptParams, contextId, loginURL, loggedInIndicator, extraPostData, scriptName, protectedPages);
 
-        // set up user
-        this.userId = setUpUser(listener, zapClientAPI, username, password, contextId);
+        return setUpUser(listener, zapClientAPI, contextId, username, password);
     }
 
     /**
@@ -1402,156 +1272,96 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            the client API to use ZAP API methods
      * @param url
      *            the url to investigate
+     *
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void spiderURL(BuildListener listener, ClientApi zapClientAPI, final String url) throws ClientApiException, InterruptedException {
-        // TODO More Testing
-        if (getSpiderScanURL()) {
-            loggerMessage(listener, "authMode = [ {0} ]", String.valueOf(this.authMode));
-            loggerMessage(listener, "maxChildren = [ {0} ]", String.valueOf(this.spiderScanMaxChildrenToCrawl));
-            loggerMessage(listener, "recurse = [ {0} ]", String.valueOf(this.spiderScanRecurse));
-            loggerMessage(listener, "subtreeOnly = [ {0} ]", String.valueOf(this.spiderScanSubtreeOnly));
+    private void spiderScanURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, final String contextName, final String contextId, final String userId, boolean authMode, boolean recurse, boolean subtreeOnly, int maxChildrenToCrawl) throws ClientApiException, InterruptedException {
+        if (run) {
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 1, "SPIDER SCAN SETTINGS", Utils.ZAP);
+            Utils.loggerMessage(listener, 2, "AUTHENTICATED SPIDER SCAN [ {0} ]", String.valueOf(authMode).toUpperCase());
+            Utils.loggerMessage(listener, 2, "RECURSE: [ {0} ]", String.valueOf(recurse).toUpperCase());
+            Utils.loggerMessage(listener, 2, "SUB TREE ONLY: [ {0} ]", String.valueOf(subtreeOnly).toUpperCase());
+            Utils.loggerMessage(listener, 2, "MAX CHILDREN: [ {0} ]", String.valueOf(maxChildrenToCrawl));
             if (!authMode) {
-                loggerMessage(listener, "contextName = [ {0} ]", String.valueOf(this.evaluatedContextName));
-                loggerMessage(listener, "Spider the site [ {0} ]", this.evaluatedTargetURL);
+                Utils.loggerMessage(listener, 2, "CONTEXT NAME: [ {0} ]", contextName);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN THE SITE [ {1} ]", Utils.ZAP, targetURL);
+                Utils.lineBreak(listener);
                 /*
                  * @class org.zaproxy.clientapi.gen.Spider
                  * 
                  * @method scan
                  * 
                  * @param String apikey
-                 * 
                  * @param String url the starting point/seed of the spider (might be null or empty if the context already has a URL to start)
-                 * 
                  * @param String maxchildren a number (0 default is no maximum) or empty string
-                 * 
                  * @param String recurse true/false or empty string, default is true
-                 * 
                  * @param String contextname the name of the context (if empty string, it's not spidering a context)
-                 * 
                  * @param String true/false or subtreeonly empty string (default is false, which is to not limit to a subtree)
                  * 
                  * @throws ClientApiException
                  */
-                zapClientAPI.spider.scan(API_KEY, url, String.valueOf(this.spiderScanMaxChildrenToCrawl), String.valueOf(this.spiderScanRecurse), this.evaluatedContextName, String.valueOf(this.spiderScanSubtreeOnly));
+                zapClientAPI.spider.scan(API_KEY, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), contextName, String.valueOf(subtreeOnly));
             }
             else if (authMode) {
-                loggerMessage(listener, "this.contextId = [ {0} ]", String.valueOf(this.contextId));
-                loggerMessage(listener, "this.userId = [ {0} ]", String.valueOf(this.userId));
-                loggerMessage(listener, "Spider the site [ {0} ] as user [ {1} ]", this.evaluatedTargetURL, this.username);
+                Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
+                Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
+                ApiResponseSet userData = (ApiResponseSet) zapClientAPI.users.getUserById(contextId, userId);
+                String name = userData.getAttribute("name");
+                Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN THE SITE [ {1} ] AS USER [ {2} ]", Utils.ZAP, targetURL, name);
+                Utils.lineBreak(listener);
                 /*
                  * @class org.zaproxy.clientapi.gen.Spider
                  * 
                  * @method scanAsUser
                  * 
                  * @param String String apikey
-                 * 
                  * @param String contextid the id of the context (if empty string, it's not spidering a context)
-                 * 
                  * @param String userid
-                 * 
                  * @param String url the starting point/seed of the spider (might be null or empty if the context already has a URL to start)
-                 * 
                  * @param String maxchildren a number (0 default is no maximum) or empty string
-                 * 
                  * @param String recurse true/false or empty string, default is true
-                 * 
                  * @param String subtreeonly true/false or subtreeonly empty string (default is false, which is to not limit to a subtree)
                  * 
                  * @throws ClientApiException
                  */
-                zapClientAPI.spider.scanAsUser(API_KEY, this.contextId, this.userId, url, String.valueOf(this.spiderScanMaxChildrenToCrawl), String.valueOf(this.spiderScanRecurse), String.valueOf(this.spiderScanSubtreeOnly));
+                zapClientAPI.spider.scanAsUser(API_KEY, contextId, userId, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), String.valueOf(subtreeOnly));
             }
-            // Wait for complete spidering (equal to 100)
-            // Method signature : status(String scanId)
-            // ASK ZAP DEV TEAM about STATUS BEING""
 
-            /*
+            /**
+             * Wait for completed SPIDER SCAN (equal to 100)
+             * 
              * @class org.zaproxy.clientapi.gen.Spider
              * 
              * @method status
              * 
-             * @param String scanid
+             * @param String scanid Empty string returns the status of the most recent scan
              * 
              * @throws ClientApiException
              */
             while (statusToInt(zapClientAPI.spider.status("")) < 100) {
-                listener.getLogger().println("Status spider = " + statusToInt(zapClientAPI.spider.status("")) + "%");
-                listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-                Thread.sleep(1000);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(zapClientAPI.spider.status(""))));
+                /**
+                 * @class org.zaproxy.clientapi.gen.Core
+                 * 
+                 * @method numberOfAlerts
+                 * 
+                 * @param String baseurl Empty String returns the number of alerts for the most recent scan
+                 * 
+                 * @throws ClientApiException
+                 */
+                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
+                Utils.lineBreak(listener);
+                Thread.sleep(TREAD_SLEEP);
             }
         }
-        else loggerMessage(listener, "Skip spidering the site [ {0} ] ]", this.evaluatedTargetURL);
-    }
-
-    /**
-     * Search for all links and pages on the URL and raised passives alerts
-     *
-     * @param url
-     *            the url to investigate
-     * @param listener
-     *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
-     *            the client API to use ZAP API methods
-     * @param contextId
-     *            the id number of the contexte created for this scan
-     * @param userId
-     *            the id number of the user created for this scan
-     * @throws ClientApiException
-     * @throws InterruptedException
-     */
-    @Deprecated
-    private void spiderURLAsUser(BuildListener listener, ClientApi zapClientAPI, final String url, String contextId, String userId) throws ClientApiException, InterruptedException {
-
-        // TODO More Testing
-        loggerMessage(listener, "this.authMode = [ {0} ]", String.valueOf(this.authMode));
-        loggerMessage(listener, "this.contextId = [ {0} ]", String.valueOf(this.contextId));
-        loggerMessage(listener, "this.userId = [ {0} ]", String.valueOf(this.userId));
-        loggerMessage(listener, "maxChildren = [ {0} ]", String.valueOf(this.spiderScanMaxChildrenToCrawl));
-        loggerMessage(listener, "recurse = [ {0} ]", String.valueOf(this.spiderScanRecurse));
-        loggerMessage(listener, "recurse = [ {0} ]", String.valueOf(this.spiderScanSubtreeOnly));
-
-        /*
-         * @class org.zaproxy.clientapi.gen.Spider
-         * 
-         * @method scanAsUser
-         * 
-         * @param String String apikey
-         * 
-         * @param String contextid the id of the context (if empty string, it's not spidering a context)
-         * 
-         * @param String userid
-         * 
-         * @param String url the starting point/seed of the spider (might be null or empty if the context already has a URL to start)
-         * 
-         * @param String maxchildren a number (0 default is no maximum) or empty string
-         * 
-         * @param String recurse true/false or empty string, default is true
-         * 
-         * @param String subtreeonly true/false or subtreeonly empty string (default is false, which is to not limit to a subtree)
-         * 
-         * @throws ClientApiException
-         */
-        zapClientAPI.spider.scanAsUser(API_KEY, this.contextId, this.userId, url, String.valueOf(this.spiderScanMaxChildrenToCrawl), String.valueOf(this.spiderScanRecurse), String.valueOf(this.spiderScanSubtreeOnly));
-
-        // Wait for complete spidering (equal to 100)
-        // Method signature : status(String scanId)
-        // TODO ASK ZAP DEV TEAM why scan id can be "" and what that means?
-        /*
-         * @class org.zaproxy.clientapi.gen.Spider
-         * 
-         * @method status
-         * 
-         * @param String scanid
-         * 
-         * @throws ClientApiException
-         */
-        while (statusToInt(zapClientAPI.spider.status("")) < 100) {
-            listener.getLogger().println("Status spider = " + statusToInt(zapClientAPI.spider.status("")) + "%");
-            listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-            Thread.sleep(1000);
-        }
+        else Utils.loggerMessage(listener, 1, "SKIP SPIDER SCAN FOR THE SITE [ {0} ]", targetURL);
     }
 
     /**
@@ -1566,27 +1376,55 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void ajaxSpiderURL(BuildListener listener, ClientApi zapClientAPI, final String url) throws ClientApiException, InterruptedException {
+    private void ajaxSpiderURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, boolean inScopeOnly) throws ClientApiException, InterruptedException {
+        if (run) {
+            Utils.loggerMessage(listener, 1, "AJAX SPIDER SETTINGS", Utils.ZAP);
+            Utils.loggerMessage(listener, 2, "SUB TREE ONLY: [ {0} ]", String.valueOf(inScopeOnly).toUpperCase());
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER THE SITE [ {1} ]", Utils.ZAP, targetURL);
+            Utils.lineBreak(listener);
 
-        if (getAjaxSpiderURL()) {
-            loggerMessage(listener, "Ajax Spider the site [ {0} ]", evaluatedTargetURL);
-            // Method signature : scan(String apikey,String url,String inscope)
-            // Parameters:apikey url inscope Throws:ClientApiException
-            // ApiResponse org.zaproxy.clientapi.gen.AjaxSpider.scan(String apikey,
-            // String url, String inscope) throws ClientApiException
-            zapClientAPI.ajaxSpider.scan(API_KEY, url, String.valueOf(this.ajaxSpiderInScopeOnly));
+            /**
+             * @class org.zaproxy.clientapi.gen.AjaxSpider
+             * 
+             * @method scan
+             * 
+             * @param String apikey
+             * @param String url
+             * @param String inscope
+             * 
+             * @throws ClientApiException
+             */
+            zapClientAPI.ajaxSpider.scan(API_KEY, targetURL, String.valueOf(inScopeOnly));
 
-            // Wait for complete spidering (equal to status complete)
-            // Method signature : status(String scanId)
+            /**
+             * Wait for completed AJAX SPIDER (not equal to 'running')
+             * 
+             * @class org.zaproxy.clientapi.gen.AjaxSpider
+             * 
+             * @method status
+             * 
+             * @throws ClientApiException
+             */
             while ("running".equalsIgnoreCase(statusToString(zapClientAPI.ajaxSpider.status()))) {
-                listener.getLogger().println("Status spider = " + statusToString(zapClientAPI.ajaxSpider.status()));
-                // ApiResponse org.zaproxy.clientapi.gen.Core.numberOfAlerts(String
-                // baseurl) throws ClientApiException
-                listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-                Thread.sleep(2500);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER STATUS [ {1} ]", Utils.ZAP, statusToString(zapClientAPI.ajaxSpider.status()));
+                /**
+                 * @class org.zaproxy.clientapi.gen.Core
+                 * 
+                 * @method numberOfAlerts
+                 * 
+                 * @param String baseurl Empty String returns the number of alerts for the most recent scan
+                 * 
+                 * @throws ClientApiException
+                 */
+                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
+                Utils.lineBreak(listener);
+                Thread.sleep(TREAD_SLEEP);
             }
         }
-        else loggerMessage(listener, "Skip Ajax spidering the site [ {0} ]", evaluatedTargetURL);
+        else Utils.loggerMessage(listener, 1, "SKIP AXAJ SPIDER FOR THE SITE [ {0} ]", targetURL);
     }
 
     /**
@@ -1596,37 +1434,36 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            the listener to display log during the job execution in jenkins
      * @param zapClientAPI
      *            the client API to use ZAP API methods
-     * @param url
+     * @param targetURL
      *            the url to scan
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void scanURL(BuildListener listener, ClientApi zapClientAPI, final String url) throws ClientApiException, InterruptedException {
-        if (getActiveScanURL()) {
-            // Use a default policy if activeScanPolicy is null or empty
-            if (activeScanPolicy == null || activeScanPolicy.isEmpty()) listener.getLogger().println("Scan url [" + url + "] with the policy by default");
-            else listener.getLogger().println("Scan url [" + url + "] with the following policy [" + activeScanPolicy + "]");
+    private void activeScanURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, final String contextId, final String userId, boolean authMode, String policy, boolean recurse) throws ClientApiException, InterruptedException {
+        if (run) {
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 1, "ACTIVE SCAN SETTINGS", Utils.ZAP);
+            Utils.loggerMessage(listener, 2, "AUTHENTICATED ACTIVE SCAN [ {0} ]", String.valueOf(authMode).toUpperCase());
+            if (activeScanPolicy == null || activeScanPolicy.isEmpty()) Utils.loggerMessage(listener, 2, "POLICY: [ Default policy ]");
+            else Utils.loggerMessage(listener, 2, "POLICY: [ {0} ]", policy);
+            Utils.loggerMessage(listener, 2, "RECURSE: [ {0} ]", String.valueOf(recurse).toUpperCase());
 
             if (!authMode) {
-                loggerMessage(listener, "Scan the site [ {0} ]", evaluatedTargetURL);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN THE SITE [ {1} ]", Utils.ZAP, targetURL);
+                Utils.lineBreak(listener);
 
-                /*
+                /**
                  * @class org.zaproxy.clientapi.gen.Ascan
                  * 
                  * @method scan
                  * 
                  * @param String String apikey
-                 * 
                  * @param String url
-                 * 
                  * @param String recurse true/false, default is true
-                 * 
                  * @param String inscopeonly true/false, default is false, do not allow user change
-                 * 
-                 * @param String scanpolicyname depends on the policies that ZAP has, activeScanPolicy
-                 * 
+                 * @param String scanpolicyname depends on the policies that ZAP has, activeScanPolicy, uses default if empty or null
                  * @param String method can be any method GET/POST/PUT/DELETE..., default is null
-                 * 
                  * @param String postdata the POST data a=b&c=d (or whatever format is used), default is null
                  * 
                  * @throws ClientApiException
@@ -1635,101 +1472,86 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  * 
                  * @default values: true, false, default policy, GET, nothing
                  */
-                zapClientAPI.ascan.scan(API_KEY, url, String.valueOf(this.activeScanRecurse), "false", this.activeScanPolicy, null, null);
+                zapClientAPI.ascan.scan(API_KEY, targetURL, String.valueOf(recurse), "false", policy, null, null);
             }
             else if (authMode) {
-                loggerMessage(listener, "Spider the site [ {0} ] as user [ {1} ]", this.evaluatedTargetURL, this.username);
-                // Method signature : scan(String apikey, String url, String recurse,
-                // String inscopeonly, String scanpolicyname, String method, String
-                // postdata)
-                // Use a default policy if activeScanPolicy is null or empty
-                // ApiResponse org.zaproxy.clientapi.gen.Ascan.scanAsUser(String apikey,
-                // String url, String contextid, String userid, String recurse, String
-                // scanpolicyname, String method, String postdata) throws
-                // ClientApiException
+                Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
+                Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
+                ApiResponseSet userData = (ApiResponseSet) zapClientAPI.users.getUserById(contextId, userId);
+                String name = userData.getAttribute("name");
+                Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN THE SITE [ {1} ] AS USER [ {2} ]", Utils.ZAP, targetURL, name);
+                Utils.lineBreak(listener);
 
-                zapClientAPI.ascan.scanAsUser(API_KEY, url, this.contextId, this.userId, String.valueOf(this.activeScanRecurse), this.activeScanPolicy, null, null);
-                // if user id is null then it would break, as that's to start the scan as a user
+                /**
+                 * @class org.zaproxy.clientapi.gen.Ascan
+                 * 
+                 * @method scanAsUser
+                 * 
+                 * @param String apikey
+                 * @param String url
+                 * @param String contextid
+                 * @param String userid Cannot be null
+                 * @param String recurse
+                 * @param String scanpolicyname
+                 * @param String method
+                 * @param String postdata
+                 * 
+                 * @throws ClientApiException
+                 */
+                zapClientAPI.ascan.scanAsUser(API_KEY, targetURL, contextId, userId, String.valueOf(recurse), policy, null, null);
             }
 
-            // Wait for complete scanning (equal to 100)
-            // Method signature : status(String scanId)
-            // ApiResponse org.zaproxy.clientapi.gen.Ascan.status(String scanid)
-            // throws ClientApiException
-            // : the status uses the ID of the scan which is returned when the scan is started
-            // : if nothing is set it returns the status of the last scan
+            /**
+             * The status uses the ID of the scan which is returned when the scan is started, if nothing is set it returns the status of the last scan.
+             * 
+             * Wait for completed ACTIVE SCAN (equal to 100)
+             * 
+             * @class org.zaproxy.clientapi.gen.Spider
+             * 
+             * @method status
+             * 
+             * @param String scanid Empty string returns the status of the most recent scan
+             * 
+             * @throws ClientApiException
+             */ 
             while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
-                listener.getLogger().println("Status scan = " + statusToInt(zapClientAPI.ascan.status("")) + "%");
-                // ApiResponse org.zaproxy.clientapi.gen.Core.numberOfAlerts(String
-                // baseurl) throws ClientApiException
-                // (2) is just the tab
-                // 2:51:31 PM - thc202: numberOfAlerts allows to restrict by site/URL
-                // 2:51:37 PM - thc202: if none is set it returns the number of all alerts
-                // see http://localhost:8080/UI/core/view/numberOfAlerts/ it has a little description
-
-                listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-                // ApiResponse org.zaproxy.clientapi.gen.Core.numberOfMessages(String baseurl)
-                // throws ClientApiException
-                listener.getLogger().println("Messages number = " + zapClientAPI.core.numberOfMessages("").toString(2));
-                Thread.sleep(5000);
+                Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(zapClientAPI.ascan.status(""))));
+                /**
+                 * Allows to restrict by site/URL, if none is set it returns the number of all alerts.
+                 * 
+                 * @class org.zaproxy.clientapi.gen.Core
+                 * 
+                 * @method numberOfAlerts
+                 * 
+                 * @param String baseurl Empty String returns the number of alerts for the most recent scan
+                 * 
+                 * @throws ClientApiException
+                 * 
+                 * @see http://localhost:8080/UI/core/view/numberOfAlerts/ For description
+                 */
+                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
+                /**
+                 * Allows to restrict by site/URL, if none is set it returns the number of all messages.
+                 * 
+                 * @class org.zaproxy.clientapi.gen.Core
+                 * 
+                 * @method numberOfMessages
+                 * 
+                 * @param String baseurl
+                 * 
+                 * @throws ClientApiException
+                 */
+                String numberOfMessages = ((ApiResponseElement) zapClientAPI.core.numberOfMessages("")).getValue();
+                Utils.loggerMessage(listener, 0, "[{0}] MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
+                Utils.lineBreak(listener);
+                Thread.sleep(TREAD_SLEEP);
             }
         }
-        else loggerMessage(listener, "Skip scanning the site [ {0} ]", evaluatedTargetURL);
-    }
-
-    /**
-     * Scan all pages found at url and raised actives alerts
-     *
-     * @param url
-     *            the url to scan
-     * @param listener
-     *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
-     *            the client API to use ZAP API methods
-     * @param contextId
-     *            the id number of the contexte created for this scan
-     * @param userId
-     *            the id number of the user created for this scan
-     * @throws ClientApiException
-     * @throws InterruptedException
-     */
-    @Deprecated
-    private void scanURLAsUser(final String url, BuildListener listener, ClientApi zapClientAPI, String contextId, String userId) throws ClientApiException, InterruptedException {
-        if (activeScanPolicy == null || activeScanPolicy.isEmpty()) listener.getLogger().println("Scan url [" + url + "] with the policy by default");
-        else listener.getLogger().println("Scan url [" + url + "] with the following policy [" + activeScanPolicy + "]");
-
-        // Method signature : scan(String apikey, String url, String recurse,
-        // String inscopeonly, String scanpolicyname, String method, String
-        // postdata)
-        // Use a default policy if activeScanPolicy is null or empty
-        // ApiResponse org.zaproxy.clientapi.gen.Ascan.scanAsUser(String apikey,
-        // String url, String contextid, String userid, String recurse, String
-        // scanpolicyname, String method, String postdata) throws
-        // ClientApiException
-
-        String recurse = "true";
-        String scanpolicyname = activeScanPolicy;
-        String method = null;
-        String postdata = null;
-        // TODO ASK ZAP TEAM
-        zapClientAPI.ascan.scanAsUser(API_KEY, url, contextId, userId, recurse, scanpolicyname, method, postdata);
-        // if user id is null then it would break, as that's to start the scan as a user
-
-        // Wait for complete scanning (equal to 100)
-        // Method signature : status(String scanId)
-
-        // 2:50:25 PM - thc202: the status uses the ID of the scan which is returned when the scan is started
-        // 2:50:33 PM - thc202: if nothing is set it returns the status of the last scan
-        while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
-            listener.getLogger().println("Status scan = " + statusToInt(zapClientAPI.ascan.status("")) + "%");
-
-            // 2:51:31 PM - thc202: numberOfAlerts allows to restrict by site/URL
-            // 2:51:37 PM - thc202: if none is set it returns the number of all alerts
-            // see http://localhost:8080/UI/core/view/numberOfAlerts/ it has a little description
-            listener.getLogger().println("Alerts number = " + zapClientAPI.core.numberOfAlerts("").toString(2));
-            listener.getLogger().println("Messages number = " + zapClientAPI.core.numberOfMessages("").toString(2));
-            Thread.sleep(5000);
-        }
+        else Utils.loggerMessage(listener, 1, "SKIP ACTIVE SCAN FOR THE SITE [ {0} ]", targetURL);
     }
 
     /**
@@ -1745,11 +1567,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     // BuildListener listener) throws ClientApiException {
     private void stopZAP(ClientApi zapClientAPI, BuildListener listener) throws ClientApiException {
         if (zapClientAPI != null) {
-            listener.getLogger().println("Shutdown ZAProxy");
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ START ]", Utils.ZAP);
+            Utils.lineBreak(listener);
             // ApiResponse org.zaproxy.clientapi.gen.Core.shutdown(String apikey) throws ClientApiException
             zapClientAPI.core.shutdown(API_KEY);
         }
-        else listener.getLogger().println("No shutdown of ZAP (zapClientAPI==null)");
+        else Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ ERROR ]", Utils.ZAP);
     }
 
     /**
@@ -2125,7 +1949,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     /*
      * Variable Declaration Getters allows to load members variables into UI. Setters
      */
-
     @Override
     public ZAPDriverDescriptorImpl getDescriptor() { return (ZAPDriverDescriptorImpl) super.getDescriptor(); }
 
@@ -2135,6 +1958,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private String userId; /* Id of the newly created user */
 
+    private boolean startZAPFirst;
+    
+    public boolean getStartZAPFirst() { return startZAPFirst; }
+    
+    public void setStartZAPFirst(boolean startZAPFirst) { this.startZAPFirst = startZAPFirst; }
+    
     private String zapHost; /* Host configured when ZAPJ is used as proxy */
 
     public String getZapHost() { return zapHost; }
@@ -2220,10 +2049,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private final String loadSession; /* Filename to load ZAProxy session. Contains the absolute path to the session */
 
     public String getLoadSession() { return loadSession; }
-
-    //private final boolean persistSession; /* Save session or not */
-
-    //public boolean getPersistSession() { return persistSession; }
 
     private final String sessionFilename; /* Filename to save ZAPJ session. It can contain a relative path. */
 
@@ -2410,9 +2235,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     /*****************************/
     /* List of all parameters used for the ZAP add-on jiraIssueCreater */
     /* gets and sets the values from the credentials and base URI method call is from ZAPJBuilder */
-    private final boolean createJiras; /* create JIRA'S or not */
+    private final boolean jiraCreate; /* create JIRA'S or not */
 
-    public boolean getcreateJiras() { return createJiras; }
+    public boolean getJiraCreate() { return jiraCreate; }
 
     private String jiraBaseURL;
 
@@ -2434,20 +2259,20 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public String getJiraAssignee() { return jiraAssignee; }
 
-    private final boolean alertHigh; /* select alert type high */
+    private final boolean jiraAlertHigh; /* select alert type high */
 
-    public boolean getalertHigh() { return alertHigh; }
+    public boolean getJiraAlertHigh() { return jiraAlertHigh; }
 
-    private final boolean alertMedium; /* select alert type medium */
+    private final boolean jiraAlertMedium; /* select alert type medium */
 
-    public boolean getalertMedium() { return alertMedium; }
+    public boolean getJiraAlertMedium() { return jiraAlertMedium; }
 
-    private final boolean alertLow; /* select alert type low */
+    private final boolean jiraAlertLow; /* select alert type low */
 
-    public boolean getalertLow() { return alertLow; }
+    public boolean getJiraAlertLow() { return jiraAlertLow; }
 
-    private final boolean filterIssuesByResourceType; /* Filter issues by resource type */
+    private final boolean jiraFilterIssuesByResourceType; /* Filter issues by resource type */
 
-    public boolean getfilterIssuesByResourceType() { return filterIssuesByResourceType; }
+    public boolean getFiraFilterIssuesByResourceType() { return jiraFilterIssuesByResourceType; }
     /*****************************/
 }
