@@ -1,13 +1,25 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 ZAP Jenkins Plugin and its related class files.
+ * Copyright (c) 2016 Official ZAP Jenkins Plugin and its related class files.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.github.jenkinsci.zaproxyplugin;
@@ -22,6 +34,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,6 +49,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.lang.NullArgumentException;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tools.ant.BuildException;
 import org.jenkinsci.remoting.RoleChecker;
@@ -43,6 +57,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
+import org.zaproxy.clientapi.core.ApiResponseList;
 import org.zaproxy.clientapi.core.ApiResponseSet;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
@@ -103,9 +118,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String FILE_SESSION_EXTENSION = ".session";
     private static final String FILE_AUTH_SCRIPTS_JS_EXTENSION = ".js";
     private static final String FILE_AUTH_SCRIPTS_ZEST_EXTENSION = ".zst";
-    private static final String NAME_POLICIES_DIR_ZAP = "policies";
+    private static final String FILE_PLUGIN_EXTENSION = ".zap";
+    private static final String NAME_PLUGIN_DIR_ZAP = "plugin";
+    static final String NAME_POLICIES_DIR_ZAP = "policies";
     private static final String NAME_SCRIPTS_DIR_ZAP = "scripts";
     private static final String NAME_AUTH_SCRIPTS_DIR_ZAP = "authentication";
+    private static final String NAME_REPORT_DIR = "reports";
 
     private static final String FORM_BASED = "FORM_BASED";
     private static final String SCRIPT_BASED = "SCRIPT_BASED";
@@ -123,21 +141,38 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String ZAP_PROG_NAME_SH = "zap.sh";
 
     private static final int TREAD_SLEEP = 5000;
+
+    private static final String ZAP_PLUGIN_EXPORT_REPORT = "exportreport";
+    private static final String ZAP_PLUGIN_JIRA_ISSUE_CREATOR = "jiraIssueCreater";
+    //private static final String ZAP_PLUGIN_REGEX_EXPORT_REPORT = "\\Qexportreport-\\E.*\\Q.zap\\E";
+    //private static final String ZAP_PLUGIN_REGEX_JIRA_ISSUE_CREATOR = "\\QjiraIssueCreater-\\E.*\\Q.zap\\E";
+
+    /* ZAP Export Report Plugin Formats */
+    private static final String DEFAULT_REPORT = "DEFAULT_REPORT";
+    private static final String EXPORT_REPORT = "EXPORT_REPORT";
+    private static final String EXPORT_REPORT_FORMAT_XML = "xml";
+    private static final String EXPORT_REPORT_FORMAT_XHTML = "xhtml";
+    private static final String EXPORT_REPORT_FORMAT_JSON = "json";
     
     @DataBoundConstructor
-    public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout, 
-            String zapSettingsDir, 
-            boolean autoLoadSession, String loadSession, String sessionFilename, 
-            String contextName, String includedURL, String excludedURL, 
-            boolean authMode, String username, String password, String loggedInIndicator, String authMethod, 
-            String loginURL, String usernameParameter, String passwordParameter, String extraPostData, 
+    public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout,
+            String zapSettingsDir,
+            boolean autoLoadSession, String loadSession, String sessionFilename,
+            String contextName, String includedURL, String excludedURL,
+            boolean authMode, String username, String password, String loggedInIndicator, String authMethod,
+            String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
             String authScript, String protectedPages, List<ZAPAuthScriptParam> authScriptParams,
-            String targetURL, 
-            boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl, 
-            boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly, 
-            boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy, 
-            boolean generateReports, List<String> selectedReportFormats, String reportFilename, 
-            boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType, 
+            String targetURL,
+            boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
+            boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
+            boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy,
+            boolean generateReports, String selectedReportMethod, boolean deleteReports, String reportFilename,
+            List<String> selectedReportFormats,
+            List<String> selectedExportFormats,
+            String exportreportTitle, String exportreportBy, String exportreportFor, String exportreportScanDate, String exportreportReportDate, String exportreportScanVersion, String exportreportReportVersion, String exportreportReportDescription,
+            boolean exportreportAlertHigh, boolean exportreportAlertMedium, boolean exportreportAlertLow, boolean exportreportAlertInformational,
+            boolean exportreportCWEID, boolean exportreportWASCID, boolean exportreportDescription, boolean exportreportOtherInfo, boolean exportreportSolution, boolean exportreportReference, boolean exportreportRequestHeader, boolean exportreportResponseHeader, boolean exportreportRequestBody, boolean exportreportResponseBody,
+            boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType,
             List<ZAPCmdLine> cmdLinesZAP) {
 
         /* Startup */
@@ -200,8 +235,35 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /* Finalize Run >> Generate Report(s) */
         this.generateReports = generateReports;
-        this.selectedReportFormats = selectedReportFormats != null ? new ArrayList<String>(selectedReportFormats) : new ArrayList<String>();
+        this.selectedReportMethod = selectedReportMethod;
+        this.deleteReports = deleteReports;
         this.reportFilename = reportFilename;
+        /* Finalize Run >> Generate Report(s) >> ZAP Default */
+        this.selectedReportFormats = selectedReportFormats != null ? new ArrayList<String>(selectedReportFormats) : new ArrayList<String>();
+        /* Finalize Run >> Generate Report(s) >> Export Report */
+        this.selectedExportFormats = selectedExportFormats != null ? new ArrayList<String>(selectedExportFormats) : new ArrayList<String>();
+        this.exportreportTitle = exportreportTitle;
+        this.exportreportBy = exportreportBy;
+        this.exportreportFor = exportreportFor;
+        this.exportreportScanDate = exportreportScanDate;
+        this.exportreportReportDate = exportreportReportDate;
+        this.exportreportScanVersion = exportreportScanVersion;
+        this.exportreportReportVersion = exportreportReportVersion;
+        this.exportreportReportDescription = exportreportReportDescription;
+        this.exportreportAlertHigh = exportreportAlertHigh;
+        this.exportreportAlertMedium = exportreportAlertMedium;
+        this.exportreportAlertLow = exportreportAlertLow;
+        this.exportreportAlertInformational = exportreportAlertInformational;
+        this.exportreportCWEID = exportreportCWEID;
+        this.exportreportWASCID = exportreportWASCID;
+        this.exportreportDescription = exportreportDescription;
+        this.exportreportOtherInfo = exportreportOtherInfo;
+        this.exportreportSolution = exportreportSolution;
+        this.exportreportReference = exportreportReference;
+        this.exportreportRequestHeader = exportreportRequestHeader;
+        this.exportreportResponseHeader = exportreportResponseHeader;
+        this.exportreportRequestBody = exportreportRequestBody;
+        this.exportreportResponseBody = exportreportResponseBody;
 
         /* Finalize Run >> Create JIRA Issue(s) */
         this.jiraCreate = jiraCreate;
@@ -217,6 +279,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         System.out.println(this.toString());
     }
 
+    /**
+     * Evaluated values will return null, this is printed to console on save
+     * @return
+     */
     @Override
     public String toString() {
         String s = "";
@@ -224,8 +290,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "-------------------------------------------------------\n";
         s += "zapHost [" + zapHost + "]\n";
         s += "zapPort [" + zapPort + "]\n";
-        s += "= zapHost [" + evaluatedZapHost + "]\n";
-        s += "= zapPort [" + evaluatedZapPort + "]\n";
         s += "autoInstall [" + autoInstall + "]\n";
         s += "toolUsed [" + toolUsed + "]\n";
         s += "zapHome [" + zapHome + "]\n";
@@ -235,23 +299,18 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "ZAP Settings\n";
         s += "-------------------------------------------------------\n";
         s += "zapSettingsDir [" + zapSettingsDir + "]\n";
-        s += "= zapSettingsDir [" + evaluatedZapSettingsDir + "]\n";
         s += "\n";
         s += "Load Session\n";
         s += "-------------------------------------------------------\n";
         s += "autoLoadSession [" + autoLoadSession + "]\n";
         s += "loadSession [" + loadSession + "]\n";
         s += "sessionFilename [" + sessionFilename + "]\n";
-        s += "= persistSession [" + evaluatedSessionFilename + "]\n";
         s += "\n";
         s += "Session Properties\n";
         s += "-------------------------------------------------------\n";
         s += "contextName [" + contextName + "]\n";
-        s += "= contextName [" + evaluatedContextName + "]\n";
         s += "includedURL [" + includedURL + "]\n";
         s += "excludedURL [" + excludedURL + "]\n";
-        s += "= includedURL [" + evaluatedIncludedURL + "]\n";
-        s += "= excludedURL [" + evaluatedExcludedURL + "]\n";
         s += "\n";
         s += "Session Properties >> Authentication\n";
         s += "-------------------------------------------------------\n";
@@ -266,12 +325,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "extraPostData [" + extraPostData + "]\n";
         s += "Session Properties >> Script-Based Authentication\n";
         s += "authScript [" + authScript + "]\n";
-        s += "protectedPages [" + protectedPages + "]\n";
         s += "\n";
         s += "Attack Modes\n";
         s += "-------------------------------------------------------\n";
         s += "targetURL [" + targetURL + "]\n";
-        s += "= targetURL [" + evaluatedTargetURL + "]\n";
         s += "\n";
         s += "Attack Modes >> Spider Scan\n";
         s += "-------------------------------------------------------\n";
@@ -297,8 +354,33 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "Finalize Run >> Generate Report(s)\n";
         s += "-------------------------------------------------------\n";
         s += "generateReports [" + generateReports + "]\n";
+        s += "selectedReportMethod [" + selectedReportMethod + "]\n";
+        s += "deleteReports [" + deleteReports + "]\n";
+        s += "reportFilename [" + reportFilename + "]\n";
         s += "selectedReportFormats [" + selectedReportFormats + "]\n";
-        s += "reportFilename [" + evaluatedReportFilename + "]\n";
+        s += "selectedExportFormats [" + selectedExportFormats + "]\n";
+        s += "exportreportTitle [" + exportreportTitle + "]\n";
+        s += "exportreportBy [" + exportreportBy + "]\n";
+        s += "exportreportFor [" + exportreportFor + "]\n";
+        s += "exportreportScanDate [" + exportreportScanDate + "]\n";
+        s += "exportreportReportDate [" + exportreportReportDate + "]\n";
+        s += "exportreportScanVersion [" + exportreportScanVersion + "]\n";
+        s += "exportreportReportVersion [" + exportreportReportVersion + "]\n";
+        s += "exportreportReportDescription [" + exportreportReportDescription + "]\n";
+        s += "exportreportAlertHigh [" + exportreportAlertHigh + "]\n";
+        s += "exportreportAlertMedium [" + exportreportAlertMedium + "]\n";
+        s += "exportreportAlertLow [" + exportreportAlertLow + "]\n";
+        s += "exportreportAlertInformational [" + exportreportAlertInformational + "]\n";
+        s += "exportreportCWEID [" + exportreportCWEID + "]\n";
+        s += "exportreportWASCID [" + exportreportWASCID + "]\n";
+        s += "exportreportDescription [" + exportreportDescription + "]\n";
+        s += "exportreportOtherInfo [" + exportreportOtherInfo + "]\n";
+        s += "exportreportSolution [" + exportreportSolution + "]\n";
+        s += "exportreportReference [" + exportreportReference + "]\n";
+        s += "exportreportRequestHeader [" + exportreportRequestHeader + "]\n";
+        s += "exportreportResponseHeader [" + exportreportResponseHeader + "]\n";
+        s += "exportreportRequestBody [" + exportreportRequestBody + "]\n";
+        s += "exportreportResponseBody [" + exportreportResponseBody + "]\n";
         s += "\n";
         s += "Finalize Run >> Create JIRA Issue(s)\n";
         s += "-------------------------------------------------------\n";
@@ -323,6 +405,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      */
     public String isAuthMethod(String testTypeName) {
         return this.authMethod.equalsIgnoreCase(testTypeName) ? "true" : "";
+    }
+
+    /**
+     *
+     *
+     * @param testTypeName
+     *            of TYPE String DESC: The String representation of the test type
+     * @return Whether or not the test type string matches.
+     */
+    public String isSelectedReportMethod(String testTypeName) {
+        return this.selectedReportMethod.equalsIgnoreCase(testTypeName) ? "true" : "";
     }
 
     /**
@@ -381,6 +474,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         return zapProgramName;
     }
 
+//    private File[] listFilesMatching(File root, String regex) {
+//        if (!root.isDirectory()) throw new IllegalArgumentException(root + " is no directory.");
+//        final Pattern p = Pattern.compile(regex); // careful: could also throw an exception!
+//        return root.listFiles(new FileFilter() {
+//            @Override
+//            public boolean accept(File file) {
+//                return p.matcher(file.getName()).matches();
+//            }
+//        });
+//    }
+
     /**
      * Verify parameters of the build setup are correct (null, empty, negative ...)
      *
@@ -394,8 +498,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      */
     private void checkParams(AbstractBuild<?, ?> build, BuildListener listener) throws IllegalArgumentException, IOException, InterruptedException {
         zapProgram = retrieveZapHomeWithToolInstall(build, listener);
-        Utils.loggerMessage(listener, 0, "[{0}] VARIABLE VALIDATION AND ENVIRONMENT INJECTOR EXPANSION (EXP)", Utils.ZAP);
-        
+        Utils.loggerMessage(listener, 0, "[{0}] PLUGIN VALIDATION (PLG), VARIABLE VALIDATION AND ENVIRONMENT INJECTOR EXPANSION (EXP)", Utils.ZAP);
+
         if (this.zapProgram == null || this.zapProgram.isEmpty()) throw new IllegalArgumentException("ZAP PATH IS MISSING, PROVIDED [ " + this.zapProgram + " ]");
         else Utils.loggerMessage(listener, 1, "ZAP PATH = [ {0} ]", this.zapProgram);
 
@@ -410,30 +514,55 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         if (this.evaluatedZapPort < 0) throw new IllegalArgumentException("ZAP PORT IS LESS THAN 0, PROVIDED [ " + this.evaluatedZapPort + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) PORT = [ {0} ]", String.valueOf(this.evaluatedZapPort));
 
-        this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
-        if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
-        else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", envVars.expand(this.evaluatedContextName));
-
         this.evaluatedZapSettingsDir = envVars.expand(this.evaluatedZapSettingsDir);
         if (this.evaluatedZapSettingsDir == null || this.evaluatedZapSettingsDir.isEmpty()) throw new IllegalArgumentException("ZAP SETTINGS DIRECTORY IS MISSING, PROVIDED [ " + this.evaluatedZapSettingsDir + " ]");
-        else Utils.loggerMessage(listener, 1, "(EXP) ZAP SETTINGS DIRECTORY = [ {0} ]", envVars.expand(this.evaluatedZapSettingsDir));
+        else Utils.loggerMessage(listener, 1, "(EXP) ZAP SETTINGS DIRECTORY = [ {0} ]",this. evaluatedZapSettingsDir);
+
+        this.evaluatedSessionFilename = envVars.expand(this.evaluatedSessionFilename);
+        Utils.loggerMessage(listener, 1, "(EXP) SESSION FILENAME = [ {0} ]", this.evaluatedSessionFilename);
+
+        this.evaluatedContextName = envVars.expand(this.evaluatedContextName);
+        if (this.evaluatedContextName == null || this.evaluatedContextName.isEmpty()) this.evaluatedContextName = "Jenkins Default Context";
+        else Utils.loggerMessage(listener, 1, "(EXP) CONTEXT NAME = [ {0} ]", this.evaluatedContextName);
 
         this.evaluatedIncludedURL = envVars.expand(this.evaluatedIncludedURL);
         if (this.evaluatedIncludedURL == null || this.evaluatedIncludedURL.isEmpty()) throw new IllegalArgumentException("INCLUDE IN CONTEXT IS MISSING, PROVIDED [ " + this.evaluatedIncludedURL + " ]");
-        else Utils.loggerMessage(listener, 1, "(EXP) INCLUDE IN CONTEXT = [ {0} ]", envVars.expand(this.evaluatedIncludedURL).trim().replace("\n", ", "));
+        else Utils.loggerMessage(listener, 1, "(EXP) INCLUDE IN CONTEXT = [ {0} ]", this.evaluatedIncludedURL.trim().replace("\n", ", "));
 
         this.evaluatedExcludedURL = envVars.expand(this.evaluatedExcludedURL);
-        Utils.loggerMessage(listener, 1, "(EXP) EXCLUDE FROM CONTEXT = [ {0} ]", envVars.expand(this.evaluatedExcludedURL).trim().replace("\n", ", "));
+        Utils.loggerMessage(listener, 1, "(EXP) EXCLUDE FROM CONTEXT = [ {0} ]", this.evaluatedExcludedURL.trim().replace("\n", ", "));
 
         this.evaluatedTargetURL = envVars.expand(this.evaluatedTargetURL);
         if ((this.evaluatedTargetURL == null || this.evaluatedTargetURL.isEmpty()) && !this.startZAPFirst) throw new IllegalArgumentException("STARTING POINT (URL) IS MISSING, PROVIDED [ " + this.evaluatedTargetURL + " ]");
         else Utils.loggerMessage(listener, 1, "(EXP) STARTING POINT (URL) = [ {0} ]", this.evaluatedTargetURL);
 
-        this.evaluatedSessionFilename = envVars.expand(this.evaluatedSessionFilename);
-        Utils.loggerMessage(listener, 1, "(EXP) SESSION FILENAME = [ {0} ]", envVars.expand(this.evaluatedSessionFilename));
+        if (this.generateReports) {
+            this.evaluatedReportFilename = envVars.expand(this.evaluatedReportFilename);
+            if ((this.evaluatedReportFilename == null || this.evaluatedReportFilename.isEmpty()) && !this.startZAPFirst) throw new IllegalArgumentException("REPORT FILENAME IS MISSING, PROVIDED [ " + this.evaluatedReportFilename + " ]");
+            else Utils.loggerMessage(listener, 1, "(EXP) REPORT FILENAME = [ {0} ]", this.evaluatedReportFilename);
+
+            if (selectedReportMethod.equals(DEFAULT_REPORT)) {
+                if (this.selectedReportFormats.size() == 0) throw new NullArgumentException("GENERATE REPORTS IS CHECKED, DEFAULT REPORT FORMAT");
+            }
+            else if (selectedReportMethod.equals(EXPORT_REPORT)) {
+                // File[] plugin = listFilesMatching(Paths.get(this.evaluatedZapSettingsDir, NAME_PLUGIN_DIR_ZAP).toFile(), ZAP_PLUGIN_REGEX_EXPORT_REPORT);
+                // if (plugin.length > 0) {
+                // Utils.loggerMessage(listener, 1, "(PLG) EXPORT REPORT PLUGIN HAS BEEN FOUND [ {0} ]", plugin[0].getName());
+                if (this.selectedExportFormats.size() == 0) throw new NullArgumentException("GENERATE REPORTS IS CHECKED, EXPORT REPORT FORMAT");
+
+                this.evaluatedExportreportTitle = envVars.expand(this.evaluatedExportreportTitle);
+                if ((this.evaluatedExportreportTitle == null || this.evaluatedExportreportTitle.isEmpty()) && !this.startZAPFirst) throw new IllegalArgumentException("REPORT TITLE IS MISSING, PROVIDED [ " + this.evaluatedExportreportTitle + " ]");
+                else Utils.loggerMessage(listener, 1, "(EXP) REPORT TITLE = [ {0} ]", this.evaluatedExportreportTitle);
+                // }
+                // else throw new NoSuchFileException("EXPORT REPORT PLUGIN COULD NOT BE FOUND");
+            }
+        }
 
         /* jiraCreate is enabled */
         if (this.jiraCreate) {
+            // File[] plugin = listFilesMatching(Paths.get(this.evaluatedZapSettingsDir, NAME_PLUGIN_DIR_ZAP).toFile(), ZAP_PLUGIN_REGEX_JIRA_ISSUE_CREATOR);
+            // if (plugin.length > 0) {
+            // Utils.loggerMessage(listener, 1, "(PLG) JIRA ISSUE CREATOR PLUGIN HAS BEEN FOUND [ {0} ]", plugin[0].getName());
 
             /* Minimum : the url is needed */
             if (this.jiraBaseURL == null || this.jiraBaseURL.isEmpty()) throw new IllegalArgumentException("JIRA BASE URL IS MISSING, PROVIDED [ " + this.jiraBaseURL + " ]");
@@ -446,6 +575,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             /* the password can be empty */
             if (this.jiraPassword == null) throw new IllegalArgumentException("JIRA PASSWORD IS MISSING");
             else Utils.loggerMessage(listener, 1, "JIRA PASSWORD = [ OK ]");
+            // }
+            // else throw new NoSuchFileException("JIRA ISSUE CREATOR PLUGIN COULD NOT BE FOUND");
         }
         Utils.lineBreak(listener);
     }
@@ -463,6 +594,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws IllegalArgumentException
      */
     public Proc startZAP(AbstractBuild<?, ?> build, BuildListener listener, Launcher launcher) throws IllegalArgumentException, IOException, InterruptedException {
+        this.getAvailableFormats(getDescriptor());
+
         checkParams(build, listener);
 
         FilePath ws = build.getWorkspace();
@@ -488,7 +621,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         cmd.add(CMD_LINE_API_KEY + "=" + API_KEY);
 
         /* Set the default directory used by ZAP if it's defined and if a scan is provided */
-        if (getActiveScanURL() && this.evaluatedZapSettingsDir != null && !this.evaluatedZapSettingsDir.isEmpty()) {
+        if (this.activeScanURL && this.evaluatedZapSettingsDir != null && !this.evaluatedZapSettingsDir.isEmpty()) {
             cmd.add(CMD_LINE_DIR);
             cmd.add(this.evaluatedZapSettingsDir);
         }
@@ -512,7 +645,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         /* Call waitForSuccessfulConnectionToZap(int, BuildListener) remotely */
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ START ]", Utils.ZAP);
-        build.getWorkspace().act(new WaitZAPDriverInitCallable(this, listener));
+        build.getWorkspace().act(new WaitZAPDriverInitCallable(listener, this));
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] INITIALIZATION [ SUCCESSFUL ]", Utils.ZAP);
         Utils.lineBreak(listener);
@@ -564,7 +697,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Add list of authentication script parameters
-     * 
+     *
      * @param s
      *            stringbuilder to attach authentication script parameter
      */
@@ -584,7 +717,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            of TYPE BuildListener DESC: the listener to display the log during the job execution in Jenkins
      * @see <a href= "https://groups.google.com/forum/#!topic/zaproxy-develop/gZxYp8Og960"> [JAVA] Avoid sleep to wait ZAProxy initialization</a>
      */
-    private void waitForSuccessfulConnectionToZap(int timeout, BuildListener listener) {
+    private void waitForSuccessfulConnectionToZap(BuildListener listener, int timeout) {
         int timeoutInMs = (int) TimeUnit.SECONDS.toMillis(timeout);
         int connectionTimeoutInMs = timeoutInMs;
         int pollingIntervalInMs = (int) TimeUnit.SECONDS.toMillis(1);
@@ -597,37 +730,112 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 socket.connect(new InetSocketAddress(evaluatedZapHost, evaluatedZapPort), connectionTimeoutInMs);
                 connectionSuccessful = true;
             }
-            catch (SocketTimeoutException ignore) {
+        catch (SocketTimeoutException ignore) {
+            listener.error(ExceptionUtils.getStackTrace(ignore));
+            throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
+
+        }
+        catch (IOException ignore) {
+            /* Try again but wait some time first */
+            try {
+                Thread.sleep(pollingIntervalInMs);
+            }
+            catch (InterruptedException e) {
+                listener.error(ExceptionUtils.getStackTrace(ignore));
+                throw new BuildException("The task was interrupted while sleeping between connection polling.", e);
+            }
+
+            long ellapsedTime = System.currentTimeMillis() - startTime;
+            if (ellapsedTime >= timeoutInMs) {
                 listener.error(ExceptionUtils.getStackTrace(ignore));
                 throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-
             }
-            catch (IOException ignore) {
-                /* Try again but wait some time first */
-                try {
-                    Thread.sleep(pollingIntervalInMs);
-                }
-                catch (InterruptedException e) {
-                    listener.error(ExceptionUtils.getStackTrace(ignore));
-                    throw new BuildException("The task was interrupted while sleeping between connection polling.", e);
-                }
-
-                long ellapsedTime = System.currentTimeMillis() - startTime;
-                if (ellapsedTime >= timeoutInMs) {
-                    listener.error(ExceptionUtils.getStackTrace(ignore));
-                    throw new BuildException("Unable to connect to ZAP's proxy after " + timeout + " seconds.");
-                }
-                connectionTimeoutInMs = (int) (timeoutInMs - ellapsedTime);
+            connectionTimeoutInMs = (int) (timeoutInMs - ellapsedTime);
+        }
+        finally {
+            if (socket != null) try {
+                socket.close();
             }
-            finally {
-                if (socket != null) try {
-                    socket.close();
-                }
-                catch (IOException e) {
-                    listener.error(ExceptionUtils.getStackTrace(e));
-                }
+            catch (IOException e) {
+                listener.error(ExceptionUtils.getStackTrace(e));
             }
+        }
         while (!connectionSuccessful);
+    }
+
+    /**
+     *
+     * @param listener
+     * @param clientApi
+     * @param autoLoadSession
+     * @param loadSession
+     * @param sessionFilename
+     * @param buildSuccess
+     * @return
+     * @throws ClientApiException
+     */
+    private boolean loadSession (BuildListener listener, ClientApi clientApi, boolean autoLoadSession, String loadSession, String sessionFilename, boolean buildSuccess) throws ClientApiException{
+        if (autoLoadSession && loadSession != null && loadSession.length() != 0) {
+            File sessionFile = new File(this.loadSession);
+            Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION AT: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
+
+            /*
+             * @class org.zaproxy.clientapi.gen.Core
+             *
+             * @method loadSession
+             *
+             * @param String apikey
+             * @param String name
+             *
+             * @throws ClientApiException
+             */
+            clientApi.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
+        }
+        else if (!autoLoadSession) {
+            Utils.loggerMessage(listener, 0, "[{0}] SKIP SESSION LOADING", Utils.ZAP);
+            if (sessionFilename == null || sessionFilename.isEmpty()) {
+                buildSuccess = false;
+                Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
+            }
+        }
+        else {
+            buildSuccess = false;
+            Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
+        }
+        return buildSuccess;
+    }
+
+    /**
+     *
+     * @param listener
+     * @param workspace
+     */
+    private void deleteReports(BuildListener listener, FilePath workspace, String extensions, ArrayList<String> formats) {
+        Utils.loggerMessage(listener, 1, "CLEARING WORKSPACE OF [ {0} ]", extensions);
+
+        File folder = new File(workspace.getRemote());
+        ArrayList<File> fList = new ArrayList<File>(Arrays.asList(folder.listFiles()));
+
+        for (String format : formats)
+            for (File file : fList)
+                if (file.isFile() && file.getName().contains("." + format)) {
+                    Utils.loggerMessage(listener, 2, "DELETED [ {0} ]", file.getName());
+                    file.delete();
+                }
+
+        Utils.loggerMessage(listener, 1, "CLEARING WORKSPACE/{0} OF [ {1} ]", NAME_REPORT_DIR.toUpperCase(), extensions);
+        Path p = Paths.get(workspace.getRemote(), NAME_REPORT_DIR);
+        folder = p.toFile();
+        if (folder.exists()) {
+            fList = new ArrayList<File>(Arrays.asList(folder.listFiles()));
+
+            for (String format : formats)
+                for (File file : fList)
+                    if (file.isFile() && file.getName().contains("." + format)) {
+                        Utils.loggerMessage(listener, 2, "DELETED [ {0} ]", file.getName());
+                        file.delete();
+                    }
+        }
     }
 
     /**
@@ -644,11 +852,200 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws IOException
      */
-    private void saveReport(ClientApi clientApi, BuildListener listener, FilePath workspace, ZAPReport reportFormat, String filename) throws IOException, ClientApiException {
+    private void saveReport(BuildListener listener, ClientApi clientApi, FilePath workspace, ZAPReport reportFormat, String filename) throws IOException, ClientApiException {
         final String fullFileName = filename + "." + reportFormat.getFormat();
         File reportsFile = new File(workspace.getRemote(), fullFileName);
         FileUtils.writeByteArrayToFile(reportsFile, reportFormat.generateReport(clientApi, API_KEY));
         Utils.loggerMessage(listener, 1, "[ {0} ] SAVED TO [ {1} ]", reportFormat.getFormat().toUpperCase(), reportsFile.getAbsolutePath());
+    }
+
+    /**
+     *
+     * @param listener
+     * @param clientApi
+     * @param workspace
+     * @param selectedFormats
+     * @param reportFilename
+     * @param sourceDetails
+     * @param alertSeverity
+     * @param alertDetails
+     * @param buildSuccess
+     * @return
+     */
+    private boolean exportReport(BuildListener listener, ClientApi clientApi, FilePath workspace, ArrayList<String> selectedFormats, String reportFilename, String sourceDetails, String alertSeverity, String alertDetails, boolean buildSuccess) {
+        try {
+            ArrayList<String> validFormats = new ArrayList<String>();
+            ArrayList<String> apiFormats = new ArrayList<String>();
+            Map<String, String> mapView = null;
+            mapView = new HashMap<String, String>();
+            if (API_KEY != null) mapView.put("apikey", API_KEY);
+            ApiResponseList apiReponseFormats = (ApiResponseList) clientApi.callApi("exportreport", "view", "formats", mapView);
+            Utils.loggerMessage(listener, 1, "EXPORT REPORT FORMAT CHECK [ TRUE ]");
+
+            if (apiReponseFormats.getItems().size() > 0) for (int i = 0; i < apiReponseFormats.getItems().size(); i++) {
+                ApiResponseElement apiFormat = (ApiResponseElement) apiReponseFormats.getItems().get(i);
+                apiFormats.add(apiFormat.getValue());
+            }
+
+            for (String pluginFormat : selectedFormats)
+                if (apiFormats.contains(pluginFormat)) {
+                    Utils.loggerMessage(listener, 2, "[ {0} ] IS A VALID FORMAT", pluginFormat.toUpperCase());
+                    validFormats.add(pluginFormat);
+                }
+                else Utils.loggerMessage(listener, 2, "[ {0} ] IS AN INVALID FORMAT", pluginFormat.toUpperCase());
+
+            for (String format : validFormats)
+                if (buildSuccess) {
+                    Map<String, String> map = null;
+                    map = new HashMap<String, String>();
+
+                    final String fullFileName = reportFilename + "." + format;
+                    Path p = Paths.get(workspace.getRemote(), NAME_REPORT_DIR);
+                    File f = p.toFile();
+                    if (!f.exists()) {
+                        f.mkdir();
+                    }
+                    f = new File(p.toAbsolutePath().toString(), fullFileName);
+
+                    if (API_KEY != null) map.put("apikey", API_KEY);
+                    map.put("absolutePath", f.getAbsolutePath());
+                    map.put("fileExtension", format);
+                    map.put("sourceDetails", sourceDetails);
+                    map.put("alertSeverity", alertSeverity);
+                    map.put("alertDetails", alertDetails);
+
+                    Utils.lineBreak(listener);
+                    Utils.loggerMessage(listener, 1, "INITIALIZE EXPORT REPORT VARIABLES FOR [ {0} ] EXPORT", format.toUpperCase());
+                    Utils.loggerMessage(listener, 2, "API KEY [ {0} ]", API_KEY);
+                    Utils.loggerMessage(listener, 2, "ABSOLUTE PATH [ {0} ]", f.getAbsolutePath());
+                    Utils.loggerMessage(listener, 2, "FILE EXTENSION [ .{0} ]", format);
+                    Utils.loggerMessage(listener, 2, "SOURCE DETAILS [ {0} ]", sourceDetails);
+                    Utils.loggerMessage(listener, 2, "ALERT SEVERITY [ {0} ]", alertSeverity);
+                    Utils.loggerMessage(listener, 2, "ALERT DETAILS [ {0} ]", alertDetails);
+                    Utils.lineBreak(listener);
+
+                    /*
+                     * @class org.zaproxy.clientapi.core.ClientApi
+                     *
+                     * @method callApi
+                     *
+                     * @param String component
+                     * @param String type
+                     * @param String method
+                     * @param Map<String, String> params
+                     *
+                     * @throws ClientApiException
+                     */
+                    ApiResponseElement val = (ApiResponseElement) clientApi.callApi("exportreport", "action", "generate", map);
+                    if (val.getValue().equals(ApiResponseElement.FAIL.getValue())) {
+                        Utils.lineBreak(listener);
+                        Utils.loggerMessage(listener, 0, "[{0}] EXPORT REPORT PLUGIN RETURNED STATUS [ FAIL ], BUILD RESULTING IN FAILURE", Utils.ZAP);
+                        buildSuccess = false;
+                    }
+                    try {
+                        Thread.sleep(TREAD_SLEEP);
+                        Thread.sleep(TREAD_SLEEP);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+        }
+        catch (ClientApiException e) {
+            listener.getLogger().println(e.getMessage());
+        }
+        return buildSuccess;
+    }
+
+    /**
+     *
+     * @param listener
+     * @param clientApi
+     * @param jiraBaseURL
+     * @param jiraUsername
+     * @param jiraPassword
+     * @param jiraProjectKey
+     * @param jiraAssignee
+     * @param jiraAlertHigh
+     * @param jiraAlertMedium
+     * @param jiraAlertLow
+     * @param jiraFilterIssuesByResourceType
+     */
+    private void jiraCreate(BuildListener listener, ClientApi clientApi, String jiraBaseURL, String jiraUsername, String jiraPassword, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType) {
+        Map<String, String> map = null;
+        map = new HashMap<String, String>();
+
+        if (API_KEY != null) map.put("apikey", API_KEY);
+        map.put("jiraBaseURL", jiraBaseURL);
+        map.put("jiraUserName", jiraUsername);
+        map.put("jiraPassword", jiraPassword);
+        map.put("jiraProjectKey", jiraProjectKey);
+        map.put("jiraAssignee", jiraAssignee);
+        map.put("high", returnCheckedStatus(jiraAlertHigh));
+        map.put("medium", returnCheckedStatus(jiraAlertMedium));
+        map.put("low", returnCheckedStatus(jiraAlertLow));
+        map.put("filterIssuesByResourceType", returnCheckedStatus(jiraFilterIssuesByResourceType));
+
+        Utils.loggerMessage(listener, 1, "INITIALIZE JIRA VARIABLES", Utils.ZAP);
+        Utils.loggerMessage(listener, 2, "API KEY [ {0} ]", API_KEY);
+        Utils.loggerMessage(listener, 2, "BASE URL [ {0} ]", jiraBaseURL);
+        Utils.loggerMessage(listener, 2, "USERNAME [ {0} ]", jiraUsername);
+        Utils.loggerMessage(listener, 2, "PROJECT KEY [ {0} ]", jiraProjectKey);
+        Utils.loggerMessage(listener, 2, "ASSIGNEE [ {0} ]", jiraAssignee);
+        Utils.loggerMessage(listener, 2, "EXPORT HIGH ALERTS [ {0} ]", Boolean.toString(jiraAlertHigh).toUpperCase());
+        Utils.loggerMessage(listener, 2, "EXPORT MEDIUM ALERTS [ {0} ]", Boolean.toString(jiraAlertMedium).toUpperCase());
+        Utils.loggerMessage(listener, 2, "EXPORT LOW ALERTS [ {0} ]", Boolean.toString(jiraAlertLow).toUpperCase());
+        Utils.loggerMessage(listener, 2, "FILTER BY RESOURCE TYPE [ {0} ]", Boolean.toString(jiraFilterIssuesByResourceType).toUpperCase());
+
+        try {
+            /*
+             * @class org.zaproxy.clientapi.core.ClientApi
+             *
+             * @method callApi
+             *
+             * @param String component
+             * @param String type
+             * @param String method
+             * @param Map<String, String> params
+             *
+             * @throws ClientApiException
+             */
+            clientApi.callApi("jiraIssueCreater", "action", "createJiraIssues", map);
+
+        }
+        catch (ClientApiException e) {
+            listener.getLogger().println(e.getMessage());
+        }
+    }
+
+    /**
+     *
+     * @param listener
+     * @param clientApi
+     * @param workspace
+     * @param filename
+     * @throws ClientApiException
+     */
+    private void persistSession (BuildListener listener, ClientApi clientApi, FilePath workspace, String filename) throws ClientApiException {
+        if (filename != null && !filename.isEmpty()) {
+            File sessionFile = new File(workspace.getRemote(), filename);
+            Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION TO: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
+            /* If the path does not exist, create it. */
+            if (!sessionFile.getParentFile().exists()) sessionFile.getParentFile().mkdirs();
+
+            /*
+             * @class org.zaproxy.clientapi.gen.Core
+             *
+             * @method saveSession
+             *
+             * @param String apikey
+             * @param String name
+             * @param String overwrite
+             *
+             * @throws ClientApiException
+             */
+            clientApi.core.saveSession(API_KEY, sessionFile.getAbsolutePath(), "true");
+        }
     }
 
     /**
@@ -659,157 +1056,116 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @param listener
      *            of TYPE: BuildListener DESC: the listener to display log during the job execution in Jenkins
      * @return of TYPE: boolean DESC: true if no exception is caught, false otherwise.
+     * @throws NoSuchFileException 
      */
-    public boolean executeZAP(FilePath workspace, BuildListener listener) {
-        ClientApi zapClientAPI = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort);
+    public boolean executeZAP(BuildListener listener, FilePath workspace) {
         boolean buildSuccess = true;
+
+        if (((this.generateReports) && this.selectedReportMethod.equals(EXPORT_REPORT)) || (this.jiraCreate)) {
+            Utils.loggerMessage(listener, 0, "[{0}] PLUGIN SEARCH...", Utils.ZAP);
+            // No workspace before the first build, so workspace is null
+            if (workspace != null) {
+                File[] listFiles = {};
+                try {
+                    listFiles = workspace.act(new PluginCallable(this.evaluatedZapSettingsDir));
+                }
+                catch (IOException e) {
+                    // No listener because it's not during a build but it's on the job config page
+                    e.printStackTrace();
+                }
+                catch (InterruptedException e) {
+                    // No listener because it's not during a build but it's on the job config page
+                    e.printStackTrace();
+                }
+                int count = 0;
+                for (File listFile : listFiles) {
+                    if (FilenameUtils.getBaseName(listFile.getName()).contains(ZAP_PLUGIN_EXPORT_REPORT) || FilenameUtils.getBaseName(listFile.getName()).contains(ZAP_PLUGIN_JIRA_ISSUE_CREATOR)) {
+                        Utils.loggerMessage(listener, 1, "[ {0} ] PLUGIN HAS BEEN FOUND", FilenameUtils.getBaseName(listFile.getName()));
+                        count++;
+                    }
+                }
+                if (count == 0) {
+                    Utils.loggerMessage(listener, 1, "REQUIRED PLUGIN(S) ARE MISSING");
+                    buildSuccess = false;
+                }
+            }
+            Utils.lineBreak(listener);
+        }
+
+        ClientApi clientApi = new ClientApi(this.evaluatedZapHost, this.evaluatedZapPort);
 
         try {
             /* LOAD SESSION */
-            if (this.autoLoadSession && this.loadSession != null && this.loadSession.length() != 0) {
-                File sessionFile = new File(this.loadSession);
-                Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION AT: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
-
-                /*
-                 * @class org.zaproxy.clientapi.gen.Core
-                 * 
-                 * @method loadSession
-                 * 
-                 * @param String apikey
-                 * @param String name
-                 * 
-                 * @throws ClientApiException
-                 */
-                zapClientAPI.core.loadSession(API_KEY, sessionFile.getAbsolutePath());
-            }
-            else if (!autoLoadSession) {
-                Utils.loggerMessage(listener, 0, "[{0}] SKIP SESSION LOADING", Utils.ZAP);
-                if (this.sessionFilename == null || this.sessionFilename.isEmpty()) {
-                    buildSuccess = false;
-                    Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
-                }
-            }
-            else {
-                buildSuccess = false;
-                Utils.loggerMessage(listener, 0, "[{0}] LOAD SESSION FAILURE, NO SESSION SPECIFIED", Utils.ZAP);
-            }
-            Utils.lineBreak(listener);
-
-            /* SET UP CONTEXT  */
             if (buildSuccess) {
-                this.contextId = setUpContext(listener, zapClientAPI, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
+                buildSuccess = loadSession(listener, clientApi, this.autoLoadSession, this.loadSession, this.sessionFilename, buildSuccess);
+                Utils.lineBreak(listener);
+            }
+
+            if (buildSuccess) {
+                /* SETUP CONTEXT  */
+                this.contextId = setUpContext(listener, clientApi, this.evaluatedContextName, this.evaluatedIncludedURL, this.evaluatedExcludedURL);
 
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.authMode).toUpperCase());
                 Utils.loggerMessage(listener, 0, "[{0}] AUTHENTICATION MODE [ {1} ]", Utils.ZAP, this.authMethod.toUpperCase());
                 Utils.lineBreak(listener);
-                if (authMode) if (authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, zapClientAPI, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
-                else if (authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, zapClientAPI, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
+                /* SETUP AUTHENICATION */
+                if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
+                else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
+                /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.spiderScanURL).toUpperCase());
-                spiderScanURL(listener, zapClientAPI, this.spiderScanURL, this.evaluatedTargetURL, this.contextName, this.contextId, this.userId, this.authMode, this.spiderScanRecurse, this.spiderScanSubtreeOnly, this.spiderScanMaxChildrenToCrawl);
+                spiderScanURL(listener, clientApi, this.spiderScanURL, this.evaluatedTargetURL, this.contextName, this.contextId, this.userId, this.authMode, this.spiderScanRecurse, this.spiderScanSubtreeOnly, this.spiderScanMaxChildrenToCrawl);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.ajaxSpiderURL).toUpperCase());
-                ajaxSpiderURL(listener, zapClientAPI, this.ajaxSpiderURL, this.evaluatedTargetURL, this.ajaxSpiderInScopeOnly);
+                ajaxSpiderURL(listener, clientApi, this.ajaxSpiderURL, this.evaluatedTargetURL, this.ajaxSpiderInScopeOnly);
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN ENABLED [ {1} ]", Utils.ZAP, String.valueOf(this.activeScanURL).toUpperCase());
-                activeScanURL(listener, zapClientAPI, this.activeScanURL, this.evaluatedTargetURL, this.contextId, this.userId, this.authMode, this.activeScanPolicy, this.activeScanRecurse);
+                activeScanURL(listener, clientApi, this.activeScanURL, this.evaluatedTargetURL, this.contextId, this.userId, this.authMode, this.activeScanPolicy, this.activeScanRecurse);
+
+                /* CLEAR WORKSPACE  */
                 Utils.lineBreak(listener);
+                Utils.loggerMessage(listener, 0, "[{0}] CLEAR WORKSPACE OF PREVIOUS REPORT(S) [ {1} ]", Utils.ZAP, Boolean.toString(this.deleteReports).toUpperCase());
+                if (this.generateReports && this.deleteReports) deleteReports(listener, workspace, this.availableFormatsString, this.availableFormatsArray);
+                else Utils.loggerMessage(listener, 1, "SKIP CLEARING WORKSPACE");
 
                 /* GENERATE REPORTS  */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] GENERATE REPORT(S) [ {1} ]", Utils.ZAP, String.valueOf(this.generateReports).toUpperCase());
-                if (generateReports) for (String format : this.selectedReportFormats) {
+                /* DEFAULT REPORT */
+                if (this.generateReports)  if(this.selectedReportMethod.equals(DEFAULT_REPORT)) for (String format : this.selectedReportFormats) {
                     ZAPReport report = ZAPReportCollection.getInstance().getMapFormatReport().get(format);
-                    saveReport(zapClientAPI, listener, workspace, report, this.evaluatedReportFilename);
+                    saveReport(listener, clientApi, workspace, report, this.evaluatedReportFilename);
                 }
+                else if (this.selectedReportMethod.equals(EXPORT_REPORT)) {
+                    String sourceDetails = this.evaluatedExportreportTitle + ";" + this.exportreportBy + ";" + this.exportreportFor + ";" + this.exportreportScanDate + ";" + this.exportreportReportDate + ";" + this.exportreportScanVersion + ";" + this.exportreportReportVersion + ";" + this.exportreportReportDescription;
+                    String alertSeverity = returnBooleanCheckedStatus(this.exportreportAlertHigh) + ";" + returnBooleanCheckedStatus(this.exportreportAlertMedium) + ";" + returnBooleanCheckedStatus(this.exportreportAlertLow) + ";" + returnBooleanCheckedStatus(this.exportreportAlertInformational);
+                    String alertDetails = returnBooleanCheckedStatus(this.exportreportCWEID) + ";" + returnBooleanCheckedStatus(this.exportreportWASCID) + ";" + returnBooleanCheckedStatus(this.exportreportDescription) + ";" + returnBooleanCheckedStatus(this.exportreportOtherInfo) + ";" + returnBooleanCheckedStatus(this.exportreportSolution) + ";"
+                            + returnBooleanCheckedStatus(this.exportreportReference) + ";" + returnBooleanCheckedStatus(this.exportreportRequestHeader) + ";" + returnBooleanCheckedStatus(this.exportreportResponseHeader) + ";" + returnBooleanCheckedStatus(this.exportreportRequestBody) + ";" + returnBooleanCheckedStatus(this.exportreportResponseBody) + ";";
+                    buildSuccess = exportReport(listener, clientApi, workspace, this.selectedExportFormats, this.evaluatedReportFilename, sourceDetails, alertSeverity, alertDetails, buildSuccess);
+                }
+                else Utils.loggerMessage(listener, 1, "SKIP GENERATE REPORT(S)");
 
                 /* CREATE JIRA ISSUES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] CREATE JIRA ISSUES [ {1} ]", Utils.ZAP, String.valueOf(this.jiraCreate).toUpperCase());
-                if (this.jiraCreate) {
-                    Map<String, String> map = null;
-                    map = new HashMap<String, String>();
-
-                    if (API_KEY != null) map.put("apikey", API_KEY);
-                    map.put("jiraBaseURL", this.jiraBaseURL);
-                    map.put("jiraUserName", this.jiraUsername);
-                    map.put("jiraPassword", this.jiraPassword);
-                    map.put("jiraProjectKey", this.jiraProjectKey);
-                    map.put("jiraAssignee", this.jiraAssignee);
-                    map.put("high", returnCheckedStatus(this.jiraAlertHigh));
-                    map.put("medium", returnCheckedStatus(this.jiraAlertMedium));
-                    map.put("low", returnCheckedStatus(this.jiraAlertLow));
-                    map.put("filterIssuesByResourceType", returnCheckedStatus(this.jiraFilterIssuesByResourceType));
-
-                    Utils.loggerMessage(listener, 1, "INITIALIZE JIRA VARIABLES", Utils.ZAP);
-                    Utils.loggerMessage(listener, 2, "API KEY [ {0} ]", API_KEY);
-                    Utils.loggerMessage(listener, 2, "BASE URL [ {0} ]", this.jiraBaseURL);
-                    Utils.loggerMessage(listener, 2, "USERNAME [ {0} ]", this.jiraUsername);
-                    Utils.loggerMessage(listener, 2, "PROJECT KEY [ {0} ]", this.jiraProjectKey);
-                    Utils.loggerMessage(listener, 2, "ASSIGNEE [ {0} ]", this.jiraAssignee);
-                    Utils.loggerMessage(listener, 2, "EXPORT HIGH ALERTS [ {0} ]", Boolean.toString(this.jiraAlertHigh).toUpperCase());
-                    Utils.loggerMessage(listener, 2, "EXPORT MEDIUM ALERTS [ {0} ]", Boolean.toString(this.jiraAlertMedium).toUpperCase());
-                    Utils.loggerMessage(listener, 2, "EXPORT LOW ALERTS [ {0} ]", Boolean.toString(this.jiraAlertLow).toUpperCase());
-                    Utils.loggerMessage(listener, 2, "FILTER BY RESOURCE TYPE [ {0} ]", Boolean.toString(this.jiraFilterIssuesByResourceType).toUpperCase());
-
-                    try {
-                        /*
-                         * @class org.zaproxy.clientapi.core.ClientApi
-                         * 
-                         * @method callApi
-                         * 
-                         * @param String component
-                         * @param String type
-                         * @param String method
-                         * @param Map<String, String> params
-                         * 
-                         * @throws ClientApiException
-                         */
-                        zapClientAPI.callApi("jiraIssueCreater", "action", "createJiraIssues", map);
-
-                    }
-                    catch (ClientApiException e) {
-                        listener.getLogger().println(e.getMessage());
-                    }
-
-                }
+                if (this.jiraCreate) jiraCreate(listener, clientApi, this.jiraBaseURL, this.jiraUsername, this.jiraPassword, this.jiraProjectKey, this.jiraAssignee, this.jiraAlertHigh, this.jiraAlertMedium, this.jiraAlertLow, this.jiraFilterIssuesByResourceType);
                 else Utils.loggerMessage(listener, 1, "SKIP CREATING JIRA ISSUES");
 
                 /* PERSIST SESSION */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION [ {1} ]", Utils.ZAP, String.valueOf(!this.autoLoadSession).toUpperCase());
-                if (!this.autoLoadSession) {
-                    if (this.sessionFilename != null && !this.sessionFilename.isEmpty()) {
-                        File sessionFile = new File(workspace.getRemote(), this.sessionFilename);
-                        Utils.loggerMessage(listener, 0, "[{0}] PERSIST SESSION TO: [ {1} ]", Utils.ZAP, sessionFile.getAbsolutePath());
-                        /* If the path does not exist, create it. */
-                        if (!sessionFile.getParentFile().exists()) sessionFile.getParentFile().mkdirs();
-
-                        /*
-                         * @class org.zaproxy.clientapi.gen.Core
-                         * 
-                         * @method saveSession
-                         * 
-                         * @param String apikey
-                         * @param String name
-                         * @param String overwrite
-                         * 
-                         * @throws ClientApiException
-                         */
-                        zapClientAPI.core.saveSession(API_KEY, sessionFile.getAbsolutePath(), "true");
-                    }
-                }
+                if (!this.autoLoadSession) persistSession(listener, clientApi, workspace, this.sessionFilename);
                 else Utils.loggerMessage(listener, 1, "SKIP PERSISTINT A SESSION BECAUSE ONE WAS ALREADY LOADED.");
 
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] SUMMARY...", Utils.ZAP);
-                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 1, "ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
-                String numberOfMessages = ((ApiResponseElement) zapClientAPI.core.numberOfMessages("")).getValue();
+                String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
                 Utils.loggerMessage(listener, 1, "MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
             }
         }
@@ -819,13 +1175,34 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
         finally {
             try {
-                stopZAP(zapClientAPI, listener);
+                stopZAP(listener, clientApi);
             }
             catch (ClientApiException e) {
                 listener.error(ExceptionUtils.getStackTrace(e));
                 buildSuccess = false;
             }
         }
+
+        // Utils.loggerMessage(listener, 0, "[{0}] LOG SEARCH...", Utils.ZAP);
+        // // No workspace before the first build, so workspace is null
+        // if (workspace != null) {
+        // File[] listFiles = {};
+        // try {
+        // listFiles = workspace.act(new LogCallable(this.evaluatedZapSettingsDir));
+        // }
+        // catch (IOException e) {
+        // // No listener because it's not during a build but it's on the job config page
+        // e.printStackTrace();
+        // }
+        // catch (InterruptedException e) {
+        // // No listener because it's not during a build but it's on the job config page
+        // e.printStackTrace();
+        // }
+        // for (File listFile : listFiles) {
+        // Utils.loggerMessage(listener, 1, "[ {0} ] LOG HAS BEEN FOUND", FilenameUtils.getBaseName(listFile.getName()));
+        // }
+        // }
+        Utils.lineBreak(listener);
         return buildSuccess;
     }
 
@@ -833,6 +1210,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * method used to return the checked state inside CREATE JIRA ISSUES
      **/
     private String returnCheckedStatus(boolean checkedStatus) { return checkedStatus ? "1" : "0"; }
+
+    /**
+     * method used to return the checked state inside CREATE JIRA ISSUES
+     **/
+    private String returnBooleanCheckedStatus(boolean checkedStatus) { return checkedStatus ? "t" : "f"; }
 
     /**
      * Converts the ZAP API status response to an integer
@@ -879,17 +1261,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *            the URL to be added to context
      * @param excludedURL
      *            the URL to exclude from context
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @return the context ID of the context
      * @throws ClientApiException
      */
-    private String setUpContext(BuildListener listener, ClientApi zapClientAPI, String contextName, String includedURL, String excludedURL) throws ClientApiException {
+    private String setUpContext(BuildListener listener, ClientApi clientApi, String contextName, String includedURL, String excludedURL) throws ClientApiException {
         String contextIdTemp;
         includedURL = includedURL.trim();
         excludedURL = excludedURL.trim();
 
-        Utils.loggerMessage(listener, 0, "[{0}] CREATE NEW CONECT [ {1} ]", Utils.ZAP, contextName);
+        Utils.loggerMessage(listener, 0, "[{0}] CREATE NEW CONTEXT [ {1} ]", Utils.ZAP, contextName);
         Utils.lineBreak(listener);
         /**
          * @class org.zaproxy.clientapi.gen.Context
@@ -898,7 +1280,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param String contextname
          * @throws ClientApiException
          */
-        contextIdTemp = extractContextId(zapClientAPI.context.newContext(API_KEY, contextName));
+        contextIdTemp = extractContextId(clientApi.context.newContext(API_KEY, contextName));
 
         /* INCLUDE URL(S) IN CONTEXT */
         Utils.loggerMessage(listener, 0, "[{0}] INCLUDE IN CONTEXT", Utils.ZAP);
@@ -918,7 +1300,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      * @param String regex
                      * @throws ClientApiException
                      */
-                    zapClientAPI.context.includeInContext(API_KEY, contextName, contextIncludedURL);
+                    clientApi.context.includeInContext(API_KEY, contextName, contextIncludedURL);
                     Utils.loggerMessage(listener, 1, "[ {0} ]", contextIncludedURL);
                 }
 
@@ -947,8 +1329,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                      * @param String contextname
                      * @param String regex
                      * @throws ClientApiException
-                     */                    
-                    zapClientAPI.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
+                     */
+                    clientApi.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
                     Utils.loggerMessage(listener, 1, "[ {0} ]", contextExcludedURL);
                 }
 
@@ -958,7 +1340,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             e.printStackTrace();
             listener.error(ExceptionUtils.getStackTrace(e));
         }
-
         return contextIdTemp;
     }
 
@@ -967,7 +1348,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param contextId
      *            id of the creted context
@@ -984,12 +1365,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private void setUpFormBasedAuth(BuildListener listener, ClientApi zapClientAPI, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
+    private void setUpFormBasedAuth(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String usernameParameter, String passwordParameter) throws ClientApiException, UnsupportedEncodingException {
 
         String loginRequestData = usernameParameter + "={%username%}&" + passwordParameter + "={%password%}";
-        if (extraPostData.length() > 0) {
-            loginRequestData = loginRequestData + "&" + extraPostData;
-        }
+        if (extraPostData.length() > 0) loginRequestData = loginRequestData + "&" + extraPostData;
 
         // set form based authentication method
         // Prepare the configuration in a format similar to how URL parameters
@@ -1003,42 +1382,39 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /*
          * @class org.zaproxy.clientapi.gen.Authentication
-         * 
+         *
          * @method setAuthenticationMethod
-         * 
+         *
          * @param String String apikey
-         * 
+         *
          * @param String contextid
-         * 
+         *
          * @param String authmethodname (formBasedAuthentication, scriptBasedAuthentication, httpAuthentication and manualAuthentication)
-         * 
+         *
          * @param String authmethodconfigparams
-         * 
+         *
          * @throws ClientApiException
-         * 
+         *
          * @see https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/examples/java/org/zaproxy/clientapi/examples/authentication/FormBasedAuthentication.java
-         * 
+         *
          * @see https://github.com/zaproxy/zaproxy/wiki/FAQformauth which mentions the ZAP API (but the above example is probably more useful)
          */
         Utils.loggerMessage(listener, 0, "[{0}] FORM BASED AUTH SET AS: {1}", Utils.ZAP, formBasedConfig.toString());
         Utils.lineBreak(listener);
-        zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "formBasedAuthentication", formBasedConfig.toString());
+        clientApi.authentication.setAuthenticationMethod(API_KEY, contextId, "formBasedAuthentication", formBasedConfig.toString());
 
         Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
-        ApiResponseSet authData = (ApiResponseSet) zapClientAPI.authentication.getAuthenticationMethod(contextId);
+        ApiResponseSet authData = (ApiResponseSet) clientApi.authentication.getAuthenticationMethod(contextId);
         List<String> authList = new ArrayList<String>(Arrays.asList(authData.toString(0).replace("\t", "").split("\\r?\\n")));
         authList.remove(0);
         authList.remove(authList.size() - 1);
 
-        for (String tmp : authList) {
+        for (String tmp : authList)
             Utils.loggerMessage(listener, 1, "{0}", tmp);
-        }
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
         // add logged in indicator
-        if (!loggedInIndicator.equals("")) {
-            zapClientAPI.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
-        }
+        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
         Utils.lineBreak(listener);
     }
 
@@ -1047,7 +1423,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the ZAP API client
      * @param contextId
      * @param loginURL
@@ -1060,7 +1436,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws UnsupportedEncodingException
      * @throws ClientApiException
      */
-    private void setUpScriptBasedAuth(BuildListener listener, ClientApi zapClientAPI, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName, String protectedPages) throws UnsupportedEncodingException, ClientApiException {
+    private void setUpScriptBasedAuth(BuildListener listener, ClientApi clientApi, ArrayList<ZAPAuthScriptParam> authScriptParams, String contextId, String loginURL, String loggedInIndicator, String extraPostData, String scriptName, String protectedPages) throws UnsupportedEncodingException, ClientApiException {
 
         // set script based authentication method
         // Prepare the configuration in a format similar to how URL parameters
@@ -1088,8 +1464,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // authmethodconfigparams) throws ClientApiException
         // it's possible to know more of authmethodconfigparams for each authentication method with http://localhost:8080/JSON/authentication/view/getAuthenticationMethodConfigParams/?authMethodName=scriptBasedAuthentication
         Utils.loggerMessage(listener, 0, "[{0}] LOAD SCRIPT FOR AUTHENTICATION", Utils.ZAP);
-        zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication", scriptBasedConfig.toString());
-        
+        clientApi.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication", scriptBasedConfig.toString());
+
         /*
          * 2:14:01 PM - thc202: and optional 2:14:56 PM - thc202: that value is the Utils.indentation level when generating the string representation of the API response 2:14:57 PM - thc202: https://github.com/zaproxy/zap-api-java/blob/master/subprojects/zap-clientapi/src/main/java/org/zaproxy/clientapi/core/ApiResponseSet.java#L61
          */
@@ -1099,20 +1475,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         // no, the string (if outputted) would be shifted to the right one more level
         Utils.lineBreak(listener);
         Utils.loggerMessage(listener, 0, "[{0}] AUTH CONFIG:", Utils.ZAP);
-        ApiResponseSet authData = (ApiResponseSet) zapClientAPI.authentication.getAuthenticationMethod(contextId);
+        ApiResponseSet authData = (ApiResponseSet) clientApi.authentication.getAuthenticationMethod(contextId);
         List<String> authList = new ArrayList<String>(Arrays.asList(authData.toString(0).replace("\t", "").split("\\r?\\n")));
         authList.remove(0);
         authList.remove(authList.size() - 1);
 
-        for (String tmp : authList) {
+        for (String tmp : authList)
             Utils.loggerMessage(listener, 1, "{0}", tmp);
-        }
 
         Utils.loggerMessage(listener, 1, "loggedInIndicator = {0}", loggedInIndicator);
         // add logged in indicator
-        if (!loggedInIndicator.equals("")) {
-            zapClientAPI.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
-        }
+        if (!loggedInIndicator.equals("")) clientApi.authentication.setLoggedInIndicator(API_KEY, contextId, loggedInIndicator);
         Utils.lineBreak(listener);
     }
 
@@ -1121,7 +1494,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param username
      *            user name to be used in authentication
@@ -1133,12 +1506,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private String setUpUser(BuildListener listener, ClientApi zapClientAPI, String contextId, String username, String password) throws ClientApiException, UnsupportedEncodingException {
+    private String setUpUser(BuildListener listener, ClientApi clientApi, String contextId, String username, String password) throws ClientApiException, UnsupportedEncodingException {
 
         String userIdTemp;
         /**
          * Create a new user name and add it to the context specified by the id, at least one user is required in order to extract the id
-         * 
+         *
          * @class org.zaproxy.clientapi.gen.Users
          * @method newUser
          * @param String apikey
@@ -1146,7 +1519,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param String name
          * @throws ClientApiException
          */
-        userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, username));
+        userIdTemp = extractUserId(clientApi.users.newUser(API_KEY, contextId, username));
 
         /* The created user has key-value pair association (Session Properties > Context > Context Name > Users), not to be confused with Authentication but it is dependent on it.
          *     form-based is hard coded in the api to lower case
@@ -1174,7 +1547,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param String String authcredentialsconfigparams
          * @throws ClientApiException
          */
-        zapClientAPI.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, userAuthConfig.toString());
+        clientApi.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, userAuthConfig.toString());
 
         Utils.loggerMessage(listener, 1, "NEW USER ADDED [ SUCCESSFULLY ]", tempUsernameParam, username);
         Utils.loggerMessage(listener, 2, "{0}: {1}", tempUsernameParam, username);
@@ -1189,11 +1562,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param String String enabled
          * @throws ClientApiException
          */
-        zapClientAPI.users.setUserEnabled(API_KEY, contextId, userIdTemp, "true");
+        clientApi.users.setUserEnabled(API_KEY, contextId, userIdTemp, "true");
         Utils.loggerMessage(listener, 1, "USER {0} IS NOW ENABLED", username);
 
         /* Forces Authenticated User during SPIDER SCAN and AJAX SPIDER */
-        setUpForcedUser(listener, zapClientAPI, contextId, userIdTemp);
+        setUpForcedUser(listener, clientApi, contextId, userIdTemp);
 
         return userIdTemp;
     }
@@ -1203,7 +1576,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param contextId
      *            id of the created context
@@ -1211,7 +1584,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws UnsupportedEncodingException
      */
-    private void setUpForcedUser(BuildListener listener, ClientApi zapClientAPI, String contextid, String userid) throws ClientApiException, UnsupportedEncodingException {
+    private void setUpForcedUser(BuildListener listener, ClientApi clientApi, String contextid, String userid) throws ClientApiException, UnsupportedEncodingException {
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
          * @method setForcedUser
@@ -1220,7 +1593,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param String userid
          * @throws ClientApiException
          */
-        zapClientAPI.forcedUser.setForcedUser(API_KEY, contextid, userid);
+        clientApi.forcedUser.setForcedUser(API_KEY, contextid, userid);
 
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
@@ -1229,7 +1602,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * @param boolean bool
          * @throws ClientApiException
          */
-        zapClientAPI.forcedUser.setForcedUserModeEnabled(API_KEY, true);
+        clientApi.forcedUser.setForcedUserModeEnabled(API_KEY, true);
     }
 
     /**
@@ -1256,11 +1629,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws InterruptedException
      * @throws UnsupportedEncodingException
      */
-    private String setUpAuthentication(BuildListener listener, ClientApi zapClientAPI, String contextId, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
-        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, zapClientAPI, contextId, loginURL, loggedInIndicator, extraPostData, usernameParameter, passwordParameter);
-        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, zapClientAPI, authScriptParams, contextId, loginURL, loggedInIndicator, extraPostData, scriptName, protectedPages);
+    private String setUpAuthentication(BuildListener listener, ClientApi clientApi, String contextId, String loginURL, String username, String password, String loggedInIndicator, String extraPostData, String authMethod, String usernameParameter, String passwordParameter, String scriptName, ArrayList<ZAPAuthScriptParam> authScriptParams) throws ClientApiException, UnsupportedEncodingException {
+        if (authMethod.equals(FORM_BASED)) setUpFormBasedAuth(listener, clientApi, contextId, loginURL, loggedInIndicator, extraPostData, usernameParameter, passwordParameter);
+        else if (authMethod.equals(SCRIPT_BASED)) setUpScriptBasedAuth(listener, clientApi, authScriptParams, contextId, loginURL, loggedInIndicator, extraPostData, scriptName, protectedPages);
 
-        return setUpUser(listener, zapClientAPI, contextId, username, password);
+        return setUpUser(listener, clientApi, contextId, username, password);
     }
 
     /**
@@ -1268,7 +1641,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param url
      *            the url to investigate
@@ -1276,7 +1649,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void spiderScanURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, final String contextName, final String contextId, final String userId, boolean authMode, boolean recurse, boolean subtreeOnly, int maxChildrenToCrawl) throws ClientApiException, InterruptedException {
+    private void spiderScanURL(BuildListener listener, ClientApi clientApi, boolean run, String targetURL, final String contextName, final String contextId, final String userId, boolean authMode, boolean recurse, boolean subtreeOnly, int maxChildrenToCrawl) throws ClientApiException, InterruptedException {
         if (run) {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 1, "SPIDER SCAN SETTINGS", Utils.ZAP);
@@ -1291,24 +1664,24 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.lineBreak(listener);
                 /*
                  * @class org.zaproxy.clientapi.gen.Spider
-                 * 
+                 *
                  * @method scan
-                 * 
+                 *
                  * @param String apikey
                  * @param String url the starting point/seed of the spider (might be null or empty if the context already has a URL to start)
                  * @param String maxchildren a number (0 default is no maximum) or empty string
                  * @param String recurse true/false or empty string, default is true
                  * @param String contextname the name of the context (if empty string, it's not spidering a context)
                  * @param String true/false or subtreeonly empty string (default is false, which is to not limit to a subtree)
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                zapClientAPI.spider.scan(API_KEY, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), contextName, String.valueOf(subtreeOnly));
+                clientApi.spider.scan(API_KEY, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), contextName, String.valueOf(subtreeOnly));
             }
             else if (authMode) {
                 Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
                 Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
-                ApiResponseSet userData = (ApiResponseSet) zapClientAPI.users.getUserById(contextId, userId);
+                ApiResponseSet userData = (ApiResponseSet) clientApi.users.getUserById(contextId, userId);
                 String name = userData.getAttribute("name");
                 Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
                 Utils.lineBreak(listener);
@@ -1316,9 +1689,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 Utils.lineBreak(listener);
                 /*
                  * @class org.zaproxy.clientapi.gen.Spider
-                 * 
+                 *
                  * @method scanAsUser
-                 * 
+                 *
                  * @param String String apikey
                  * @param String contextid the id of the context (if empty string, it's not spidering a context)
                  * @param String userid
@@ -1326,36 +1699,36 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  * @param String maxchildren a number (0 default is no maximum) or empty string
                  * @param String recurse true/false or empty string, default is true
                  * @param String subtreeonly true/false or subtreeonly empty string (default is false, which is to not limit to a subtree)
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                zapClientAPI.spider.scanAsUser(API_KEY, contextId, userId, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), String.valueOf(subtreeOnly));
+                clientApi.spider.scanAsUser(API_KEY, contextId, userId, targetURL, String.valueOf(maxChildrenToCrawl), String.valueOf(recurse), String.valueOf(subtreeOnly));
             }
 
             /**
              * Wait for completed SPIDER SCAN (equal to 100)
-             * 
+             *
              * @class org.zaproxy.clientapi.gen.Spider
-             * 
+             *
              * @method status
-             * 
+             *
              * @param String scanid Empty string returns the status of the most recent scan
-             * 
+             *
              * @throws ClientApiException
              */
-            while (statusToInt(zapClientAPI.spider.status("")) < 100) {
+            while (statusToInt(clientApi.spider.status("")) < 100) {
                 Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(zapClientAPI.spider.status(""))));
+                Utils.loggerMessage(listener, 0, "[{0}] SPIDER SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(clientApi.spider.status(""))));
                 /**
                  * @class org.zaproxy.clientapi.gen.Core
-                 * 
+                 *
                  * @method numberOfAlerts
-                 * 
+                 *
                  * @param String baseurl Empty String returns the number of alerts for the most recent scan
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
                 Utils.lineBreak(listener);
                 Thread.sleep(TREAD_SLEEP);
@@ -1369,14 +1742,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param url
      *            the url to investigate
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void ajaxSpiderURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, boolean inScopeOnly) throws ClientApiException, InterruptedException {
+    private void ajaxSpiderURL(BuildListener listener, ClientApi clientApi, boolean run, String targetURL, boolean inScopeOnly) throws ClientApiException, InterruptedException {
         if (run) {
             Utils.loggerMessage(listener, 1, "AJAX SPIDER SETTINGS", Utils.ZAP);
             Utils.loggerMessage(listener, 2, "SUB TREE ONLY: [ {0} ]", String.valueOf(inScopeOnly).toUpperCase());
@@ -1386,39 +1759,39 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
             /**
              * @class org.zaproxy.clientapi.gen.AjaxSpider
-             * 
+             *
              * @method scan
-             * 
+             *
              * @param String apikey
              * @param String url
              * @param String inscope
-             * 
+             *
              * @throws ClientApiException
              */
-            zapClientAPI.ajaxSpider.scan(API_KEY, targetURL, String.valueOf(inScopeOnly));
+            clientApi.ajaxSpider.scan(API_KEY, targetURL, String.valueOf(inScopeOnly));
 
             /**
              * Wait for completed AJAX SPIDER (not equal to 'running')
-             * 
+             *
              * @class org.zaproxy.clientapi.gen.AjaxSpider
-             * 
+             *
              * @method status
-             * 
+             *
              * @throws ClientApiException
              */
-            while ("running".equalsIgnoreCase(statusToString(zapClientAPI.ajaxSpider.status()))) {
+            while ("running".equalsIgnoreCase(statusToString(clientApi.ajaxSpider.status()))) {
                 Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER STATUS [ {1} ]", Utils.ZAP, statusToString(zapClientAPI.ajaxSpider.status()));
+                Utils.loggerMessage(listener, 0, "[{0}] AJAX SPIDER STATUS [ {1} ]", Utils.ZAP, statusToString(clientApi.ajaxSpider.status()));
                 /**
                  * @class org.zaproxy.clientapi.gen.Core
-                 * 
+                 *
                  * @method numberOfAlerts
-                 * 
+                 *
                  * @param String baseurl Empty String returns the number of alerts for the most recent scan
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
                 Utils.lineBreak(listener);
                 Thread.sleep(TREAD_SLEEP);
@@ -1432,14 +1805,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      *
      * @param listener
      *            the listener to display log during the job execution in jenkins
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param targetURL
      *            the url to scan
      * @throws ClientApiException
      * @throws InterruptedException
      */
-    private void activeScanURL(BuildListener listener, ClientApi zapClientAPI, boolean run, String targetURL, final String contextId, final String userId, boolean authMode, String policy, boolean recurse) throws ClientApiException, InterruptedException {
+    private void activeScanURL(BuildListener listener, ClientApi clientApi, boolean run, String targetURL, final String contextId, final String userId, boolean authMode, String policy, boolean recurse) throws ClientApiException, InterruptedException {
         if (run) {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 1, "ACTIVE SCAN SETTINGS", Utils.ZAP);
@@ -1455,9 +1828,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                 /**
                  * @class org.zaproxy.clientapi.gen.Ascan
-                 * 
+                 *
                  * @method scan
-                 * 
+                 *
                  * @param String String apikey
                  * @param String url
                  * @param String recurse true/false, default is true
@@ -1465,19 +1838,19 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  * @param String scanpolicyname depends on the policies that ZAP has, activeScanPolicy, uses default if empty or null
                  * @param String method can be any method GET/POST/PUT/DELETE..., default is null
                  * @param String postdata the POST data a=b&c=d (or whatever format is used), default is null
-                 * 
+                 *
                  * @throws ClientApiException
-                 * 
+                 *
                  * @notes all of them can be null or empty strings, which is the same as not using them
-                 * 
+                 *
                  * @default values: true, false, default policy, GET, nothing
                  */
-                zapClientAPI.ascan.scan(API_KEY, targetURL, String.valueOf(recurse), "false", policy, null, null);
+                clientApi.ascan.scan(API_KEY, targetURL, String.valueOf(recurse), "false", policy, null, null);
             }
             else if (authMode) {
                 Utils.loggerMessage(listener, 2, "CONTEXT ID: [ {0} ]", contextId);
                 Utils.loggerMessage(listener, 2, "USER ID: [ {0} ]", userId);
-                ApiResponseSet userData = (ApiResponseSet) zapClientAPI.users.getUserById(contextId, userId);
+                ApiResponseSet userData = (ApiResponseSet) clientApi.users.getUserById(contextId, userId);
                 String name = userData.getAttribute("name");
                 Utils.loggerMessage(listener, 2, "USER NAME: [ {0} ]", name);
                 Utils.lineBreak(listener);
@@ -1486,9 +1859,9 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                 /**
                  * @class org.zaproxy.clientapi.gen.Ascan
-                 * 
+                 *
                  * @method scanAsUser
-                 * 
+                 *
                  * @param String apikey
                  * @param String url
                  * @param String contextid
@@ -1497,55 +1870,55 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                  * @param String scanpolicyname
                  * @param String method
                  * @param String postdata
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                zapClientAPI.ascan.scanAsUser(API_KEY, targetURL, contextId, userId, String.valueOf(recurse), policy, null, null);
+                clientApi.ascan.scanAsUser(API_KEY, targetURL, contextId, userId, String.valueOf(recurse), policy, null, null);
             }
 
             /**
              * The status uses the ID of the scan which is returned when the scan is started, if nothing is set it returns the status of the last scan.
-             * 
+             *
              * Wait for completed ACTIVE SCAN (equal to 100)
-             * 
+             *
              * @class org.zaproxy.clientapi.gen.Spider
-             * 
+             *
              * @method status
-             * 
+             *
              * @param String scanid Empty string returns the status of the most recent scan
-             * 
+             *
              * @throws ClientApiException
-             */ 
-            while (statusToInt(zapClientAPI.ascan.status("")) < 100) {
+             */
+            while (statusToInt(clientApi.ascan.status("")) < 100) {
                 Utils.lineBreak(listener);
-                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(zapClientAPI.ascan.status(""))));
+                Utils.loggerMessage(listener, 0, "[{0}] ACTIVE SCAN STATUS [ {1}% ]", Utils.ZAP, String.valueOf(statusToInt(clientApi.ascan.status(""))));
                 /**
                  * Allows to restrict by site/URL, if none is set it returns the number of all alerts.
-                 * 
+                 *
                  * @class org.zaproxy.clientapi.gen.Core
-                 * 
+                 *
                  * @method numberOfAlerts
-                 * 
+                 *
                  * @param String baseurl Empty String returns the number of alerts for the most recent scan
-                 * 
+                 *
                  * @throws ClientApiException
-                 * 
+                 *
                  * @see http://localhost:8080/UI/core/view/numberOfAlerts/ For description
                  */
-                String numberOfAlerts = ((ApiResponseElement) zapClientAPI.core.numberOfAlerts("")).getValue();
+                String numberOfAlerts = ((ApiResponseElement) clientApi.core.numberOfAlerts("")).getValue();
                 Utils.loggerMessage(listener, 0, "[{0}] ALERTS COUNT [ {1} ]", Utils.ZAP, numberOfAlerts);
                 /**
                  * Allows to restrict by site/URL, if none is set it returns the number of all messages.
-                 * 
+                 *
                  * @class org.zaproxy.clientapi.gen.Core
-                 * 
+                 *
                  * @method numberOfMessages
-                 * 
+                 *
                  * @param String baseurl
-                 * 
+                 *
                  * @throws ClientApiException
                  */
-                String numberOfMessages = ((ApiResponseElement) zapClientAPI.core.numberOfMessages("")).getValue();
+                String numberOfMessages = ((ApiResponseElement) clientApi.core.numberOfMessages("")).getValue();
                 Utils.loggerMessage(listener, 0, "[{0}] MESSAGES COUNT [ {1} ]", Utils.ZAP, numberOfMessages);
                 Utils.lineBreak(listener);
                 Thread.sleep(TREAD_SLEEP);
@@ -1557,21 +1930,21 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     /**
      * Stop ZAproxy if it has been previously started.
      *
-     * @param zapClientAPI
+     * @param clientApi
      *            the client API to use ZAP API methods
      * @param listener
      *            the listener to display log during the job execution in jenkins
      * @throws ClientApiException
      */
-    // private void stopZAP(ZAProxy zaproxy, ClientApi zapClientAPI,
+    // private void stopZAP(ZAProxy zaproxy, ClientApi clientApi,
     // BuildListener listener) throws ClientApiException {
-    private void stopZAP(ClientApi zapClientAPI, BuildListener listener) throws ClientApiException {
-        if (zapClientAPI != null) {
+    private void stopZAP(BuildListener listener, ClientApi clientApi) throws ClientApiException {
+        if (clientApi != null) {
             Utils.lineBreak(listener);
             Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ START ]", Utils.ZAP);
             Utils.lineBreak(listener);
             // ApiResponse org.zaproxy.clientapi.gen.Core.shutdown(String apikey) throws ClientApiException
-            zapClientAPI.core.shutdown(API_KEY);
+            clientApi.core.shutdown(API_KEY);
         }
         else Utils.loggerMessage(listener, 0, "[{0}] SHUTDOWN [ ERROR ]", Utils.ZAP);
     }
@@ -1594,14 +1967,30 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
 
+        /** Represents the build's workspace */
+        private FilePath workspace;
+
+        public void setWorkspace(FilePath ws) { this.workspace = ws; }
+
+        @Override
+        public String getDisplayName() { return null; }
+
         /**
          * Map where key is the report format represented by a String and value is a ZAPreport object allowing to generate a report with the corresponding format.
          */
         private Map<String, ZAPReport> mapFormatReport;
 
-        /** Represents the build's workspace */
-        private FilePath workspace;
+        public Map<String, ZAPReport> getMapFormatReport() { return mapFormatReport; }
 
+        public List<String> getAllFormats() { return new ArrayList<String>(mapFormatReport.keySet()); }
+
+        public List<String> getAllExportFormats() {
+            ArrayList<String> arr = new ArrayList<String>();
+            arr.add(EXPORT_REPORT_FORMAT_XML);
+            arr.add(EXPORT_REPORT_FORMAT_XHTML);
+            arr.add(EXPORT_REPORT_FORMAT_JSON);
+            return arr;
+        }
         /**
          * In order to load the persisted global configuration, you have to call load() in the constructor.
          */
@@ -1609,15 +1998,6 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             mapFormatReport = ZAPReportCollection.getInstance().getMapFormatReport();
             load();
         }
-
-        @Override
-        public String getDisplayName() { return null; }
-
-        public Map<String, ZAPReport> getMapFormatReport() { return mapFormatReport; }
-
-        public List<String> getAllFormats() { return new ArrayList<String>(mapFormatReport.keySet()); }
-
-        public void setWorkspace(FilePath ws) { this.workspace = ws; }
 
         /**
          * Performs on-the-fly validation of the form field 'reportFilename'.
@@ -1681,6 +2061,60 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             return FormValidation.ok();
         }
 
+        public FormValidation doCheckAuthScript(@QueryParameter("authScript") final String authScript) {
+            if (authScript == null || authScript.isEmpty()) return FormValidation.error("Field is required");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportTitle(@QueryParameter("exportreportTitle") final String exportreportTitle) {
+            if (exportreportTitle == null || exportreportTitle.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportTitle.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportBy(@QueryParameter("exportreportBy") final String exportreportBy) {
+            if (exportreportBy == null || exportreportBy.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportBy.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportFor(@QueryParameter("exportreportFor") final String exportreportFor) {
+            if (exportreportFor == null || exportreportFor.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportFor.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportScanDate(@QueryParameter("exportreportScanDate") final String exportreportScanDate) {
+            if (exportreportScanDate == null || exportreportScanDate.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportScanDate.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportReportDate(@QueryParameter("exportreportReportDate") final String exportreportReportDate) {
+            if (exportreportReportDate == null || exportreportReportDate.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportReportDate.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportScanVersion(@QueryParameter("exportreportScanVersion") final String exportreportScanVersion) {
+            if (exportreportScanVersion == null || exportreportScanVersion.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportScanVersion.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportReportVersion(@QueryParameter("exportreportReportVersion") final String exportreportReportVersion) {
+            if (exportreportReportVersion == null || exportreportReportVersion.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportReportVersion.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckExportreportReportDescription(@QueryParameter("exportreportReportDescription") final String exportreportReportDescription) {
+            if (exportreportReportDescription == null || exportreportReportDescription.isEmpty()) return FormValidation.error("Field is required");
+            if (exportreportReportDescription.contains(";")) return FormValidation.error("Field cannot contain the character ';'");
+            if (exportreportReportDescription.contains("\n")) return FormValidation.error("Field cannot contain line breaks");
+            return FormValidation.ok();
+        }
+
         /**
          * List model to choose the alert report format
          *
@@ -1693,6 +2127,17 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             return items;
         }
 
+        /**
+         * List model to choose the export report format
+         *
+         * @return a {@link ListBoxModel}
+         */
+        public ListBoxModel doFillSelectedExportFormatsItems() {
+            ListBoxModel items = new ListBoxModel();
+            for (String item: getAllExportFormats())
+                items.add(item);
+            return items;
+        }
         /**
          * List model to choose the tool used (normally, it should be the ZAProxy tool).
          *
@@ -1769,7 +2214,8 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                 // Add script authentication files to the list, with their extension
                 for (File listFile : listFiles)
-                    items.add(listFile.getName());
+                    items.add(FilenameUtils.getBaseName(listFile.getName()));
+                //getName()
             }
             return items;
         }
@@ -1922,23 +2368,71 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
+     * This class allows to search all ZAP authentication script files in the ZAP default dir of the remote machine (or local machine if there is no remote machine). It's used in the plugin configuration page to fill the list of authentication script files and choose one of them.
+     */
+    private static class PluginCallable implements FileCallable<File[]> {
+
+        private static final long serialVersionUID = 1328740269013881941L;
+
+        private String zapSettingsDir;
+
+        public PluginCallable(String zapSettingsDir) { this.zapSettingsDir = zapSettingsDir; }
+
+        @Override
+        public File[] invoke(File f, VirtualChannel channel) {
+            File[] listFiles = {};
+
+            Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_PLUGIN_DIR_ZAP);
+
+            if (Files.isDirectory(pathAuthScriptsDir)) {
+                File zapAuthScriptsDir = pathAuthScriptsDir.toFile();
+                // create new filename filter (the filter returns true as all the extensions are accepted)
+                FilenameFilter scriptFilter = new FilenameFilter() {
+
+                    @Override
+                    public boolean accept(File dir, String name) {
+                        if (name.lastIndexOf('.') > 0) {
+                            // get last index for '.' char
+                            int lastIndex = name.lastIndexOf('.');
+
+                            // get extension
+                            String str = name.substring(lastIndex);
+
+                            // match path name extension
+                            if (str.equals(FILE_PLUGIN_EXTENSION)) return true;
+                        }
+                        return false;
+                    }
+                };
+
+                // returns pathnames for files and directory
+                listFiles = zapAuthScriptsDir.listFiles(scriptFilter);
+            }
+            return listFiles;
+        }
+
+        @Override
+        public void checkRoles(RoleChecker checker) throws SecurityException { /* N/A */ }
+    }
+
+    /**
      * This class allows to launch a method on a remote machine (if there is, otherwise, on a local machine). The method launched is to wait the complete initialization of ZAProxy.
      **/
     private static class WaitZAPDriverInitCallable implements FileCallable<Void> {
 
         private static final long serialVersionUID = -313398999885177679L;
 
-        private ZAPDriver zaproxy;
         private BuildListener listener;
+        private ZAPDriver zaproxy;
 
-        public WaitZAPDriverInitCallable(ZAPDriver zaproxy, BuildListener listener) {
-            this.zaproxy = zaproxy;
+        public WaitZAPDriverInitCallable(BuildListener listener, ZAPDriver zaproxy) {
             this.listener = listener;
+            this.zaproxy = zaproxy;
         }
 
         @Override
         public Void invoke(File f, VirtualChannel channel) {
-            zaproxy.waitForSuccessfulConnectionToZap(zaproxy.timeout, listener);
+            zaproxy.waitForSuccessfulConnectionToZap(listener, zaproxy.timeout);
             return null;
         }
 
@@ -1953,18 +2447,43 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public ZAPDriverDescriptorImpl getDescriptor() { return (ZAPDriverDescriptorImpl) super.getDescriptor(); }
 
     /* Overridden for better type safety. If your plugin doesn't really define any property on Descriptor, you don't have to do this. */
+    private String availableFormatsString;
+    private ArrayList<String> availableFormatsArray;
+
+    private void getAvailableFormats(ZAPDriverDescriptorImpl zapDriver) {
+        ArrayList<String> formats = new ArrayList<String>();
+        StringBuilder sb = new StringBuilder();
+        for (String format : zapDriver.getAllFormats())
+            if (!formats.contains(format)) {
+                formats.add(format);
+                sb.append(".");
+                sb.append(format);
+                sb.append(", ");
+            }
+        for (String format : zapDriver.getAllExportFormats())
+            if (!formats.contains(format)) {
+                formats.add(format);
+                sb.append(".");
+                sb.append(format);
+                sb.append(", ");
+            }
+        String extentions = sb.toString();
+        if (extentions.contains(", ")) extentions = extentions.substring(0, extentions.length() - 2);
+        this.availableFormatsString = extentions;
+        this.availableFormatsArray = formats;
+    }
 
     private String contextId; /* Id of the newly created context */
 
     private String userId; /* Id of the newly created user */
 
     private boolean startZAPFirst;
-    
+
     public boolean getStartZAPFirst() { return startZAPFirst; }
-    
+
     public void setStartZAPFirst(boolean startZAPFirst) { this.startZAPFirst = startZAPFirst; }
-    
-    private String zapHost; /* Host configured when ZAPJ is used as proxy */
+
+    private String zapHost; /* Host configured when ZAP is used as proxy */
 
     public String getZapHost() { return zapHost; }
 
@@ -1977,7 +2496,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public void setEvaluatedZapHost(String evaluatedZapHost) { this.evaluatedZapHost = evaluatedZapHost; }
 
-    private String zapPort; /* Port configured when ZAPJ is used as proxy */
+    private String zapPort; /* Port configured when ZAP is used as proxy */
 
     public String getZapPort() { return zapPort; }
 
@@ -2011,7 +2530,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /*
      * True if automatically installed by Jenkins (ZAProxy is installed by Jenkins with a plugin like Custom Tools Plugin) False if already installed on the machine (ZAProxy is already installed)
-     */ 
+     */
 
     private final String toolUsed; /* The ZAproxy tool to use */
 
@@ -2199,7 +2718,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     private final boolean activeScanRecurse;
 
-    public boolean getActiveScanRecurseL() { return activeScanRecurse; }
+    public boolean getActiveScanRecurse() { return activeScanRecurse; }
 
     private final String activeScanPolicy; /* The file policy to use for the scan. It contains only the policy name (without extension) */
 
@@ -2213,15 +2732,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     public boolean getGenerateReports() { return generateReports; }
 
-    private final ArrayList<String> selectedReportFormats; /* List of chosen format for reports. ArrayList because it needs to be Serializable (whereas List is not Serializable) */
+    private boolean deleteReports;
 
-    public List<String> getSelectedReportFormats() { return selectedReportFormats; }
+    public boolean getDeleteReports() { return deleteReports; }
 
     private String reportFilename; /* Filename for ZAPJ reports. It can contain a relative path or environment variable */
 
     public String getReportFilename() { return reportFilename; }
-
-    public void setReportFilename(String reportFilename) { this.reportFilename = reportFilename; }
 
     private String evaluatedReportFilename; /* Filename for ZAPJ reports. It can contain a relative path (it's derived from the one above) */
     // get and set of the new field which will contain the evaluated value of the report file name. So the environment variable will persist after each build
@@ -2229,6 +2746,115 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public String getEvaluatedReportFilename() { return evaluatedReportFilename; }
 
     public void setEvaluatedReportFilename(String evaluatedReportFilename) { this.evaluatedReportFilename = evaluatedReportFilename; }
+
+    private final String selectedReportMethod; /* Choose between default ZAP report or Export Report plugin */
+
+    public String getSelectedReportMethod() { return selectedReportMethod; }
+
+    /* Default ZAP Report */
+    private final ArrayList<String> selectedReportFormats; /* List of chosen format for reports. ArrayList because it needs to be Serializable (whereas List is not Serializable) */
+
+    public List<String> getSelectedReportFormats() { return selectedReportFormats; }
+
+    /* Export Report Plugin */
+    private final ArrayList<String> selectedExportFormats; /* List of chosen format for reports. ArrayList because it needs to be Serializable (whereas List is not Serializable) */
+
+    public List<String> getSelectedExportFormats() { return selectedExportFormats; }
+
+    private final String exportreportTitle;
+
+    public String getExportreportTitle() { return exportreportTitle; }
+
+    private String evaluatedExportreportTitle;
+
+    public String getEvaluatedExportreportTitle() { return evaluatedExportreportTitle; }
+
+    public void setEvaluatedExportreportTitle(String evaluatedExportreportTitle) { this.evaluatedExportreportTitle = evaluatedExportreportTitle; }
+
+    private final String exportreportBy;
+
+    public String getExportreportBy() { return exportreportBy; }
+
+    private final String exportreportFor;
+
+    public String getExportreportFor() { return exportreportFor; }
+
+    private final String exportreportScanDate;
+
+    public String getExportreportScanDate() { return exportreportScanDate; }
+
+    private final String exportreportReportDate;
+
+    public String getExportreportReportDate() { return exportreportReportDate; }
+
+    private final String exportreportScanVersion;
+
+    public String getExportreportScanVersion() { return exportreportScanVersion; }
+
+    private final String exportreportReportVersion;
+
+    public String getExportreportReportVersion() { return exportreportReportVersion; }
+
+    private final String exportreportReportDescription;
+
+    public String getExportreportReportDescription() { return exportreportReportDescription; }
+
+    private final boolean exportreportAlertHigh;
+
+    public boolean getExportreportAlertHigh() { return exportreportAlertHigh; }
+
+    private final boolean exportreportAlertMedium;
+
+    public boolean getExportreportAlertMedium() { return exportreportAlertMedium; }
+
+    private final boolean exportreportAlertLow;
+
+    public boolean getExportreportAlertLow() { return exportreportAlertLow; }
+
+    private final boolean exportreportAlertInformational;
+
+    public boolean getExportreportAlertInformational() { return exportreportAlertInformational; }
+
+    private final boolean exportreportCWEID;
+
+    public boolean getExportreportCWEID() { return exportreportCWEID; }
+
+    private final boolean exportreportWASCID;
+
+    public boolean getExportreportWASCID() { return exportreportWASCID; }
+
+    private final boolean exportreportDescription;
+
+    public boolean getExportreportDescription() { return exportreportDescription; }
+
+    private final boolean exportreportOtherInfo;
+
+    public boolean getExportreportOtherInfo() { return exportreportOtherInfo; }
+
+    private final boolean exportreportSolution;
+
+    public boolean getExportreportSolution() { return exportreportSolution; }
+
+    private final boolean exportreportReference;
+
+    public boolean getExportreportReference() { return exportreportReference; }
+
+    private final boolean exportreportRequestHeader;
+
+    public boolean getExportreportRequestHeader() { return exportreportRequestHeader; }
+
+    private final boolean exportreportResponseHeader;
+
+    public boolean getExportreportResponseHeader() { return exportreportResponseHeader; }
+
+    private final boolean exportreportRequestBody;
+
+    public boolean getExportreportRequestBody() { return exportreportRequestBody; }
+
+    private final boolean exportreportResponseBody;
+
+    public boolean getExportreportResponseBody() { return exportreportResponseBody; }
+
     /*****************************/
 
     /* Finalize Run >> Create JIRA Issue(s) */

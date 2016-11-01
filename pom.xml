@@ -1,92 +1,65 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.jenkins-ci.plugins</groupId>
-        <artifactId>plugin</artifactId>
-        <!-- Baseline Jenkins version you use to build and test the plugin. 
-            Users must have this version or newer to run. -->
-        <version>1.580.1</version>
-        <relativePath />
-    </parent>
-    <groupId>com.github.jenkinsci</groupId>
-    <artifactId>zaproxy</artifactId>
-    <version>2.0.0-DEV-SNAPSHOT</version>
-    <packaging>hpi</packaging>
+  <parent>
+    <groupId>org.jenkins-ci.plugins</groupId>
+    <artifactId>plugin</artifactId>
+    <!-- Baseline Jenkins version you use to build and test the plugin. 
+      Users must have this version or newer to run. -->
+    <version>1.580.1</version>
+    <relativePath />
+  </parent>
+  <groupId>com.github.jenkinsci</groupId>
+  <artifactId>zaproxy</artifactId>
+  <version>2.0.0-DEV-SNAPSHOT</version>
+  <packaging>hpi</packaging>
 
-    <name>ZAP Jenkins Plugin</name>
-    <description>This plugin allow you to launch the security software Zed Attack Proxy via Jenkins.</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin</url>
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>http://opensource.org/licenses/MIT</url>
-        </license>
-    </licenses>
-    <developers>
-        <developer>
-            <id>JordanGS</id>
-            <name>Goran Sarenkapa</name>
-            <email>developer.goran@gmail.com</email>
-        </developer>
-        <developer>
-            <id>mabdelmoez</id>
-            <name>Mostafa AbdelMoez</name>
-            <email>mabdelmoez.dev@gmail.com</email>
-        </developer>
-        <developer>
-            <id>ludovicroucoux</id>
-            <name>Ludovic Roucoux - former</name>
-            <email>ludovic.roucoux@gmail.com</email>
-        </developer>
-        <developer>
-            <id>johannol</id>
-            <name>Johann Ollivier-Lapeyre - former</name>
-            <email>johann.ollivierlapeyre@gmail.com</email>
-        </developer>
-        <developer>
-            <id>thilina27</id>
-            <name>Thilina Madhusanka - former</name>
-            <email>madhusanka.thilina@gmail.com</email>
-        </developer>
-        <developer>
-            <id>hackthem</id>
-            <name>Abdellah Azougarh - former</name>
-            <email>abdellah.azougarh@gmail.com</email>
-        </developer>
-    </developers>
-    <scm>
-        <!--<connection>scm:git:ssh://github.com:jenkinsci/zaproxy-plugin.git</connection> 
-            <developerConnection>scm:git:ssh://git@github.com/jenkinsci/zaproxy-plugin.git</developerConnection> -->
-        <connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
-        <url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
-        <tag>zaproxy-2.0.0</tag>
-    </scm>
-    <repositories>
-        <repository>
-            <id>repo.jenkins-ci.org</id>
-            <url>http://repo.jenkins-ci.org/public/</url>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>repo.jenkins-ci.org</id>
-            <url>http://repo.jenkins-ci.org/public/</url>
-        </pluginRepository>
-    </pluginRepositories>
-    <dependencies>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>credentials</artifactId>
-            <version>1.9.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.zaproxy</groupId>
-            <artifactId>zap-clientapi</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-    </dependencies>
+  <name>Official ZAP Jenkins Plugin</name>
+  <description>This plugin allow you to launch the Zed Attack Proxy security tool via Jenkins.</description>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://github.com/jenkinsci/zaproxy-plugin/blob/master/LICENSE</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>JordanGS</id>
+      <name>Goran Sarenkapa</name>
+      <email>developer.goran@gmail.com</email>
+    </developer>
+    <developer>
+      <id>mabdelmoez</id>
+      <name>Mostafa AbdelMoez</name>
+      <email>mabdelmoez.dev@gmail.com</email>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</connection>
+    <developerConnection>scm:git:https://github.com/jenkinsci/zaproxy-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/zaproxy-plugin.git</url>
+    <tag>zaproxy-2.0.0</tag>
+  </scm>
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+  <dependencies>
+    <dependency>
+      <groupId>org.zaproxy</groupId>
+      <artifactId>zap-clientapi</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
 </project>
