@@ -1,4 +1,4 @@
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
 
 Custom Tools: Jenkins Config
 ============
@@ -46,4 +46,4 @@ Custom Tools: Job Configuration
 
 * Same as the one provided above, you can have multiple installations so be sure to pick the one you want.
 
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>

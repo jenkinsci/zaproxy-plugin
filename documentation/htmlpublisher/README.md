@@ -1,4 +1,4 @@
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
 
 HTML Publisher: Job Config
 ==========================
@@ -32,4 +32,4 @@ HTML Publisher: Last Report
 
 This will always point to the last generated report.
 
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>

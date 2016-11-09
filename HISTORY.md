@@ -1,4 +1,4 @@
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
 
 VERSION HISTORY
 ===============
@@ -120,4 +120,4 @@ VERSION HISTORY
 
 * Initial version.
 
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>

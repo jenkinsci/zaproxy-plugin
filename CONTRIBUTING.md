@@ -1,4 +1,4 @@
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
 
 # Code Style Guidelines
 
@@ -146,4 +146,4 @@ To the greatest extent possible, please wrap lines to ensure that they do not ex
 
 Code Style Guidelines created by the [Credentials](https://github.com/jenkinsci/credentials-plugin/blob/master/CONTRIBUTING.md) plugin.
 
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Back</div></a>

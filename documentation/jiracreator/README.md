@@ -1,4 +1,4 @@
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
 
 <b>WARNING</b>: JIRA functionality requires an add-on <b>NOT</b> bundled with ZAP, nor available in the marketplace.
 
@@ -43,4 +43,4 @@ JIRA Creator: Job Configuration
 - Filter issue URLS by resource type is an optional feature which can be used to categorize the urls by resource type.
 	- e.g. css, html, js, jsp etc.
 
-<a href='https://github.com/JordanGS/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>
+<a href='https://github.com/jenkinsci/zaproxy-plugin/tree/development#table-of-contents-'><div align="right">Home</div></a>

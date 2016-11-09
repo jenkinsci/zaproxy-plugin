@@ -35,17 +35,18 @@ import hudson.model.Descriptor;
 /**
  * This object allows to add a script parameters dynamically.
  *
- * @author Ludovic Roucoux
- * @author Johann Ollivier-Lapeyre
- * @author Thilina Madhusanka
- * @author Abdellah Azougarh
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
+ * 
  */
 public class ZAPAuthScriptParam extends AbstractDescribableImpl<ZAPAuthScriptParam> implements Serializable {
 
-    private static final long serialVersionUID = -6217726623494939211L;
+    private static final long serialVersionUID = 1L;
 
     /** Configuration key for the command line */
     private final String scriptParameterName;

@@ -29,48 +29,64 @@ import java.text.MessageFormat;
 import hudson.model.BuildListener;
 
 /**
- * @author Ludovic Roucoux
- * @author Johann Ollivier-Lapeyre
- * @author Thilina Madhusanka
- * @author Abdellah Azougarh
+ * A support class to prevent used to create more user friendly console output.
+ * 
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
+ * 
  */
 public class Utils {
-    public static final String ZAP = "ZAP Jenkins Plugin";
-    public static final String ZAP_DRIVER = "ZAPDriver";
-    public static final String ZAP_BUILDER = "ZAPBuilder";
-    public static final String ZAP_ERROR = ":ERROR";
-    public static final String ZAP_WARNING = ":WARNING";
-    public static final String ZAP_NOTICE = ":NOTICE";
-    public static final String ZAP_SUCCESS = ":SUCCESS";
-    /**
-     * Message builder method that accepts a list of arguments. Used for internationalized messages.
-     *
-     * @param listener
-     *            of TYPE BuildListener DESC: the listener to display log during the job execution in Jenkin
-     * @param message
-     *            of TYPE String DESC: The message to display in the log, injected values are indicated by {0}, {1}, etc.
-     * @param args
-     *            of TYPE String... DESC: The injected values to go into the message.
-     */
 
+    /* Global Constant: Used by Logger */
+    public static final String ZAP = "ZAP Jenkins Plugin";
+
+    /**
+     * Write a empty line to the logger.
+     * 
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     */
     public static void lineBreak(BuildListener listener) {
         String message = "";
         MessageFormat mf = new MessageFormat(message);
         listener.getLogger().println(mf.format(null));
     }
 
+    /**
+     * Write a user specified message with injected values and specified indentation to the logger.
+     * 
+     * @param listener
+     *            of type BuildListener: the display log listener during the Jenkins job execution.
+     * @param indent
+     *            of type int: the indentation of the log message to be displayed.
+     * @param message
+     *            of type String: the message to be displayed in the log.
+     * @param args
+     *            of type String...: the values to be injected into the message
+     */
     public static void loggerMessage(BuildListener listener, int indent, String message, String... args) {
         MessageFormat mf = new MessageFormat(indent(message, indent));
         listener.getLogger().println(mf.format(args));
     }
 
-    public static String indent(String str, int indent) {
+    /**
+     * Method which adds a specified amount of tabs to the message string.
+     * 
+     * @param message
+     *            of type String: the message which will have tabs placed in front of it.
+     * @param indent
+     *            of type int: the number of tabs to be placed in front of the message.
+     * @return of type String: the original message with appended tabs to the front of it.
+     */
+    public static String indent(String message, int indent) {
         String temp = "";
         for (int i = 0; i < indent; i++)
             temp = temp + "\t";
-        return temp + str;
+        return temp + message;
     }
 }

@@ -30,7 +30,13 @@ import org.zaproxy.clientapi.core.ClientApiException;
 /**
  * Used to generate ZAP report in xml.
  *
- * @author ludovic.roucoux
+ * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
+ * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
  *
  */
 @SuppressWarnings("serial")

@@ -33,13 +33,14 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 
 /*
- * @author Ludovic Roucoux
- * @author Johann Ollivier-Lapeyre
- * @author Thilina Madhusanka
- * @author Abdellah Azougarh
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
+ * 
  */
 
 /**
@@ -49,7 +50,7 @@ import hudson.model.Descriptor;
  */
 public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements Serializable {
 
-    private static final long serialVersionUID = -695679474175608775L;
+    private static final long serialVersionUID = 1L;
 
     @DataBoundConstructor
     public ZAPCmdLine(String cmdLineOption, String cmdLineValue) {
@@ -70,7 +71,6 @@ public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements S
     @Override
     public String toString() {
         String s = "";
-        //s += "OPTION: " + cmdLineOption + " & VALUE: " + cmdLineValue;
         s += "\n\t\tOPTION : [ " + cmdLineOption + " ]\n";
         s += "\t\tVALUE  : [ " + cmdLineValue + " ]\n";
         return s;

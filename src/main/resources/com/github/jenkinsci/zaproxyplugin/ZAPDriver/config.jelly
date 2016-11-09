@@ -88,6 +88,17 @@ SOFTWARE.
     <f:entry title="${%Filename}" field="sessionFilename">
       <f:textbox />
     </f:entry>
+    <f:nested>
+      <table width="100%">
+        <f:entry title=""></f:entry>
+        <f:optionalBlock title="${%Remove External Sites}" field="removeExternalSites" inline="true">
+          <f:entry title=""></f:entry>
+          <f:entry title="${%Internal Sites}" field="internalSites">
+            <f:textarea />
+          </f:entry>
+        </f:optionalBlock>
+      </table>
+    </f:nested>
   </f:radioBlock>
 
   <f:section title="${%Session Properties}">
@@ -198,7 +209,7 @@ SOFTWARE.
       <f:entry>
         <table width="100%">
           <f:entry title="------------------------------------------------------------"></f:entry>
-          <f:optionalBlock title="${%Clear Workspace Reports}" field="deleteReports" inline="true" />
+          <f:optionalBlock title="${%Clean Workspace Reports}" field="deleteReports" inline="true" />
           <f:entry title="${%Filename}" field="reportFilename">
             <f:textbox default="JENKINS_ZAP_VULNERABILITY_REPORT" clazz="required" />
           </f:entry>

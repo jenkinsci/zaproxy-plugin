@@ -31,28 +31,32 @@ import java.util.Map;
 /**
  * This class contains all ZAPreport instance of the application. It's a singleton class so the application contains only one instance of the class.
  *
- * @author ludovic.roucoux
+ * @author Goran Sarenkapa
+ * @author Mostafa AbdelMoez
+ * @author Tanguy de Lignières
+ * @author Abdellah Azougarh
+ * @author Thilina Madhusanka
+ * @author Johann Ollivier-Lapeyre
+ * @author Ludovic Roucoux
  *
  */
 public class ZAPReportCollection implements Serializable {
 
-    private static final long serialVersionUID = -470481707608315500L;
+    private static final long serialVersionUID = 1L;
 
     private static ZAPReportCollection uniqueInstance = new ZAPReportCollection();
 
-    /**
-     * Map where key is the report format represented by a String and value is a ZAPreport object allowing to generate a report with the corresponding format.
-     */
+    /** Map where key is the report format represented by a String and value is a ZAPreport object allowing to generate a report with the corresponding format. */
     private Map<String, ZAPReport> mapFormatReport;
 
     private ZAPReportCollection() {
         mapFormatReport = new HashMap<String, ZAPReport>();
 
-        // ZAPreport's creation
+        /* ZAPReport's creation. */
         ZAPReportXML reportXML = new ZAPReportXML();
         ZAPReportHTML reportHTML = new ZAPReportHTML();
 
-        // Add ZAPreport to the map
+        /* Add ZAPReport to the map. */
         mapFormatReport.put(reportXML.getFormat(), reportXML);
         mapFormatReport.put(reportHTML.getFormat(), reportHTML);
     }
