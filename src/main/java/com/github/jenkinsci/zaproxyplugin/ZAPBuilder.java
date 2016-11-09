@@ -537,6 +537,9 @@ public class ZAPBuilder extends Builder {
 
         @Override
         public File[] invoke(File f, VirtualChannel channel) throws IOException {
+            if (!dir.exists()) {
+                dir.mkdir();
+            }
             FileUtils.cleanDirectory(dir);
             return null;
         }
