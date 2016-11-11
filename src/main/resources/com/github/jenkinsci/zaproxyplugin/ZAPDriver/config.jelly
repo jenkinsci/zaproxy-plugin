@@ -114,39 +114,49 @@ SOFTWARE.
       <f:textarea />
     </f:entry>
 
-    <f:entry>
-      <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
-        <f:entry>
-          <table width="100%">
-            <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:entry title="${%Username}" field="username">
-              <f:textbox clazz="required" />
-            </f:entry>
-            <f:entry title="${%Password}" field="password">
-              <f:password clazz="required" />
-            </f:entry>
-            <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
-              <f:textbox clazz="required" />
-            </f:entry>
 
-            <f:entry title="------------------------------------------------------------"></f:entry>
-            <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance == null || instance.isAuthMethod('FORM_BASED')}" inline="true">
-              <f:nested>
-                <f:entry title=""></f:entry>
-                <f:entry title="${%Login Form Target URL}" field="loginURL">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%Username Parameter}" field="usernameParameter">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%Password Parameter}" field="passwordParameter">
-                  <f:textbox clazz="required" />
-                </f:entry>
-                <f:entry title="${%Extra POST Data}" field="extraPostData">
-                  <f:textbox />
-                </f:entry>
-              </f:nested>
-            </f:radioBlock>
+        <f:optionalBlock title="${%Execute Standalone Script}" field="executeStandaloneScript" inline="true" >
+            <f:entry title="${%Script name}" field="standaloneScriptName">
+                <f:select clazz="required" />
+            </f:entry>
+            <f:entry title="${%Script engine}" field="standaloneScriptEngine">
+                <f:select clazz="required" />
+            </f:entry>
+        </f:optionalBlock>
+
+        <f:entry>
+            <f:optionalBlock title="${%Authentication}" field="authMode" inline="true">
+                <f:entry>
+                    <table width="100%">
+                        <f:entry title="------------------------------------------------------------"></f:entry>
+                        <f:entry title="${%Username}" field="username">
+                            <f:textbox clazz="required" />
+                        </f:entry>
+                        <f:entry title="${%Password}" field="password">
+                            <f:password clazz="required" />
+                        </f:entry>
+                        <f:entry title="${%Logged in Indicator}" field="loggedInIndicator">
+                            <f:textbox clazz="required" />
+                        </f:entry>
+                        <f:entry title="------------------------------------------------------------"></f:entry>
+
+                        <f:radioBlock title="${%Form-based Authentication}" name="authMethod" value="FORM_BASED" checked="${instance.isAuthMethod('FORM_BASED')}" inline="true">
+                            <f:nested>
+                                <f:entry title=""></f:entry>
+                                <f:entry title="${%Login Form Target URL}" field="loginURL">
+                                    <f:textbox clazz="required" />
+                                </f:entry>
+                                <f:entry title="${%Username Parameter}" field="usernameParameter">
+                                    <f:textbox clazz="required" />
+                                </f:entry>
+                                <f:entry title="${%Password Parameter}" field="passwordParameter">
+                                    <f:textbox clazz="required" />
+                                </f:entry>
+                                <f:entry title="${%Extra POST Data}" field="extraPostData">
+                                    <f:textbox />
+                                </f:entry>
+                            </f:nested>
+                        </f:radioBlock>
 
             <f:radioBlock title="${%Script-based Authentication}" name="authMethod" value="SCRIPT_BASED" checked="${instance.isAuthMethod('SCRIPT_BASED')}" inline="true">
               <f:nested>
