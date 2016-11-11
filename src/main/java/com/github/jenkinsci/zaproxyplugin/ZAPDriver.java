@@ -111,13 +111,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     /* Folder names and file extensions */
     private static final String FILE_POLICY_EXTENSION = ".policy";
     private static final String FILE_SESSION_EXTENSION = ".session";
-    private static final String FILE_AUTH_SCRIPTS_JS_EXTENSION = ".js";
-    private static final String FILE_AUTH_SCRIPTS_ZEST_EXTENSION = ".zst";
+    private static final String FILE_SCRIPTS_JS_EXTENSION = ".js";
+    private static final String FILE_SCRIPTS_ZEST_EXTENSION = ".zst";
     private static final String FILE_PLUGIN_EXTENSION = ".zap";
     private static final String NAME_PLUGIN_DIR_ZAP = "plugin";
     static final String NAME_POLICIES_DIR_ZAP = "policies";
     private static final String NAME_SCRIPTS_DIR_ZAP = "scripts";
     private static final String NAME_AUTH_SCRIPTS_DIR_ZAP = "authentication";
+    private static final String NAME_STANDALONE_SCRIPTS_DIR_ZAP = "standalone";
     private static final String NAME_REPORT_DIR = "reports";
     static final String FILENAME_LOG = "zap.log";
     static final String NAME_LOG_DIR = "logs";
@@ -148,27 +149,28 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private static final String EXPORT_REPORT_FORMAT_XML = "xml";
     private static final String EXPORT_REPORT_FORMAT_XHTML = "xhtml";
     private static final String EXPORT_REPORT_FORMAT_JSON = "json";
-    
+
     @DataBoundConstructor
     public ZAPDriver(boolean autoInstall, String toolUsed, String zapHome, String jdk, int timeout,
-            String zapSettingsDir,
-            boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
-            String contextName, String includedURL, String excludedURL,
-            boolean authMode, String username, String password, String loggedInIndicator, String authMethod,
-            String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
-            String authScript, List<ZAPAuthScriptParam> authScriptParams,
-            String targetURL,
-            boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
-            boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
-            boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy,
-            boolean generateReports, String selectedReportMethod, boolean deleteReports, String reportFilename,
-            List<String> selectedReportFormats,
-            List<String> selectedExportFormats,
-            String exportreportTitle, String exportreportBy, String exportreportFor, String exportreportScanDate, String exportreportReportDate, String exportreportScanVersion, String exportreportReportVersion, String exportreportReportDescription,
-            boolean exportreportAlertHigh, boolean exportreportAlertMedium, boolean exportreportAlertLow, boolean exportreportAlertInformational,
-            boolean exportreportCWEID, boolean exportreportWASCID, boolean exportreportDescription, boolean exportreportOtherInfo, boolean exportreportSolution, boolean exportreportReference, boolean exportreportRequestHeader, boolean exportreportResponseHeader, boolean exportreportRequestBody, boolean exportreportResponseBody,
-            boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType,
-            List<ZAPCmdLine> cmdLinesZAP) {
+                     String zapSettingsDir,
+                     boolean autoLoadSession, String loadSession, String sessionFilename, boolean removeExternalSites, String internalSites,
+                     String contextName, String includedURL, String excludedURL,
+                     boolean executeStandaloneScript, String standaloneScriptName, String standaloneScriptEngine,
+                     boolean authMode, String username, String password, String loggedInIndicator, String authMethod,
+                     String loginURL, String usernameParameter, String passwordParameter, String extraPostData,
+                     String authScript, List<ZAPAuthScriptParam> authScriptParams,
+                     String targetURL,
+                     boolean spiderScanURL, boolean spiderScanRecurse, boolean spiderScanSubtreeOnly, int spiderScanMaxChildrenToCrawl,
+                     boolean ajaxSpiderURL, boolean ajaxSpiderInScopeOnly,
+                     boolean activeScanURL, boolean activeScanRecurse, String activeScanPolicy,
+                     boolean generateReports, String selectedReportMethod, boolean deleteReports, String reportFilename,
+                     List<String> selectedReportFormats,
+                     List<String> selectedExportFormats,
+                     String exportreportTitle, String exportreportBy, String exportreportFor, String exportreportScanDate, String exportreportReportDate, String exportreportScanVersion, String exportreportReportVersion, String exportreportReportDescription,
+                     boolean exportreportAlertHigh, boolean exportreportAlertMedium, boolean exportreportAlertLow, boolean exportreportAlertInformational,
+                     boolean exportreportCWEID, boolean exportreportWASCID, boolean exportreportDescription, boolean exportreportOtherInfo, boolean exportreportSolution, boolean exportreportReference, boolean exportreportRequestHeader, boolean exportreportResponseHeader, boolean exportreportRequestBody, boolean exportreportResponseBody,
+                     boolean jiraCreate, String jiraProjectKey, String jiraAssignee, boolean jiraAlertHigh, boolean jiraAlertMedium, boolean jiraAlertLow, boolean jiraFilterIssuesByResourceType,
+                     List<ZAPCmdLine> cmdLinesZAP) {
 
         /* Startup */
         this.autoInstall = autoInstall;
@@ -191,6 +193,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         this.contextName = contextName;
         this.includedURL = includedURL;
         this.excludedURL = excludedURL;
+
+        /* Session Properties >> Standalone Script */
+        this.executeStandaloneScript=executeStandaloneScript;
+        this.standaloneScriptName=standaloneScriptName;
+        this.standaloneScriptEngine=standaloneScriptEngine;
 
         /* Session Properties >> Authentication */
         this.authMode = authMode;
@@ -277,7 +284,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Evaluated values will return null, this is printed to console on save
-     * 
+     *
      * @return
      */
     @Override
@@ -310,6 +317,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         s += "contextName [" + contextName + "]\n";
         s += "includedURL [" + includedURL + "]\n";
         s += "excludedURL [" + excludedURL + "]\n";
+        s += "\n";
+        s += "Session Properties >> Standalone Script\n";
+        s += "executeStandaloneScript [" + executeStandaloneScript + "]\n";
+        s += "standaloneScriptName [" + standaloneScriptName + " ]\n";
+        s += "standaloneScriptEngine [" + standaloneScriptEngine + "]\n";
         s += "\n";
         s += "Session Properties >> Authentication\n";
         s += "-------------------------------------------------------\n";
@@ -405,7 +417,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public String isAuthMethod(String testTypeName) {
         return this.authMethod.equalsIgnoreCase(testTypeName) ? "true" : "";
     }
-    
+
     /**
      * Test if the report method types names match (for marking the radio button).
      *
@@ -764,7 +776,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Clear the workspace and subdirectory 'reports' folder of all generated reports.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param workspace
@@ -804,7 +816,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Generates security report for one format. Reports are saved into build's workspace.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -827,7 +839,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Exports customized reports of specified formats into the {@link #NAME_REPORT_DIR} subdirectory of the build's workspace.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -935,7 +947,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Create JIRA issues for the specified alerts.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1008,7 +1020,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Only used when ZAP is run as a pre-build step, remove all sites that are not marked as internal from the sites tree.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1161,6 +1173,10 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                 if (this.authMode) if (this.authMethod.equals(FORM_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, this.usernameParameter, this.passwordParameter, null, null);
                 else if (this.authMethod.equals(SCRIPT_BASED)) this.userId = setUpAuthentication(listener, clientApi, this.contextId, this.loginURL, this.username, this.password, this.loggedInIndicator, this.extraPostData, this.authMethod, null, null, this.authScript, this.authScriptParams);
 
+                /* SETUP STANDALONE AUTHENTICATION SCRIPT */
+                if (executeStandaloneScript) { loadExecuteStandaloneScript(zapSettingsDir, standaloneScriptName, listener, clientApi); }
+                else { Utils.lineBreak(listener); Utils.loggerMessage(listener, 0, "SKIP LOADING STANDALONE SCRIPT"); }
+
                 /* SETUP ATTACK MODES */
                 Utils.lineBreak(listener);
                 Utils.loggerMessage(listener, 0, "[{0}] ATTACK MODE(S) INITIATED", Utils.ZAP);
@@ -1276,7 +1292,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Set up a context and add/exclude URL to/from it.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1300,12 +1316,12 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * @class org.zaproxy.clientapi.gen.Context
-         * 
+         *
          * @method newContext
-         * 
+         *
          * @param String apikey
          * @param String contextname
-         * 
+         *
          * @throws ClientApiException
          */
         contextIdTemp = extractContextId(clientApi.context.newContext(API_KEY, contextName));
@@ -1323,13 +1339,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                     /**
                      * @class org.zaproxy.clientapi.gen.Context
-                     * 
+                     *
                      * @method includeInContext
-                     * 
+                     *
                      * @param String apikey
                      * @param String contextname
                      * @param String regex
-                     * 
+                     *
                      * @throws ClientApiException
                      */
                     clientApi.context.includeInContext(API_KEY, contextName, contextIncludedURL);
@@ -1357,13 +1373,13 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
                     /**
                      * @class org.zaproxy.clientapi.gen.Context
-                     * 
+                     *
                      * @method excludeFromContext
-                     * 
+                     *
                      * @param String apikey
                      * @param String contextname
                      * @param String regex
-                     * 
+                     *
                      * @throws ClientApiException
                      */
                     clientApi.context.excludeFromContext(API_KEY, contextName, contextExcludedURL);
@@ -1380,8 +1396,51 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
+     * Load and execute Standalone Script
+     *
+     * @param zapSettingsDir
+     *            The settings directory used by ZAP
+     * @param scriptName
+     *            Script to load
+     * @param listener
+     *            the listener to display log during the job execution in jenkins
+     * @param zapClientAPI
+     *            the client API to use ZAP API methods
+     * @throws ClientApiException
+     * @throws InterruptedException
+     * @throws UnsupportedEncodingException
+     */
+    private void loadExecuteStandaloneScript(String zapSettingsDir, String scriptName, BuildListener listener, ClientApi zapClientAPI)
+            throws ClientApiException, InterruptedException, UnsupportedEncodingException {
+
+        if (scriptName.length() == 0){
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "SKIP LOADING STANDALONE SCRIPT. SCRIPT NAME IS EMPTY.");
+        }
+        else{
+            Utils.lineBreak(listener);
+            Utils.loggerMessage(listener, 0, "LOADING STANDALONE SCRIPT : {0}", scriptName);
+        }
+
+        Utils.lineBreak(listener);
+        Path pathStandaloneScriptsDir = Paths.get(NAME_SCRIPTS_DIR_ZAP, "standalone", scriptName);
+        Utils.loggerMessage(listener, 0, "LOADING [{0}] through [{1}] ENGINE AS STANDALONE SCRIPT FROM PATH [{2}] ", standaloneScriptName, standaloneScriptEngine, Paths.get(zapSettingsDir, standaloneScriptEngine, pathStandaloneScriptsDir.toString()).toString());
+
+        // Method signature : load(String key, String name, String type, String engine, String filename, String description)
+        //instead of pathStandaloneScriptsDir.toString())
+        zapClientAPI.script.load(API_KEY, scriptName, "standalone", standaloneScriptEngine, Paths.get(zapSettingsDir, pathStandaloneScriptsDir.toString()).toString(), "Standalone Script loaded by Jenkins");
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0,"[{0}] WAS LOADED", scriptName);
+
+        // Method signature : run(String key, String name)
+        zapClientAPI.script.runStandAloneScript(API_KEY, scriptName);
+        Utils.lineBreak(listener);
+        Utils.loggerMessage(listener, 0,"[{0}] WAS EXECUTED", scriptName);
+    }
+
+    /**
      * Set up FORM_BASED authentication method for the created context.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1448,7 +1507,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Set up SCRIPT_BASED authentication method for the created context.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1514,7 +1573,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Set up User for the context and enable the User.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1537,11 +1596,11 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
          *
          * @class org.zaproxy.clientapi.gen.Users
          * @method newUser
-         * 
+         *
          * @param String apikey
          * @param String contextid
          * @param String name
-         * 
+         *
          * @throws ClientApiException
          */
         userIdTemp = extractUserId(clientApi.users.newUser(API_KEY, contextId, username));
@@ -1565,14 +1624,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         Utils.loggerMessage(listener, 0, "[{0}] USER CREATION", Utils.ZAP);
         /**
          * @class org.zaproxy.clientapi.gen.Users
-         * 
+         *
          * @method setAuthenticationCredentials
-         * 
+         *
          * @param String apikey
          * @param String contextid
          * @param String String userid
          * @param String String authcredentialsconfigparams
-         * 
+         *
          * @throws ClientApiException
          */
         clientApi.users.setAuthenticationCredentials(API_KEY, contextId, userIdTemp, userAuthConfig.toString());
@@ -1583,14 +1642,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * @class org.zaproxy.clientapi.gen.Users
-         * 
+         *
          * @method setUserEnabled
-         * 
+         *
          * @param String apikey
          * @param String contextid
          * @param String String userid
          * @param String String enabled
-         * 
+         *
          * @throws ClientApiException
          */
         clientApi.users.setUserEnabled(API_KEY, contextId, userIdTemp, "true");
@@ -1619,25 +1678,25 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     private void setUpForcedUser(BuildListener listener, ClientApi clientApi, String contextid, String userid) throws ClientApiException, UnsupportedEncodingException {
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
-         * 
+         *
          * @method setForcedUser
-         * 
+         *
          * @param String apikey
          * @param String contextid
          * @param String userid
-         * 
+         *
          * @throws ClientApiException
          */
         clientApi.forcedUser.setForcedUser(API_KEY, contextid, userid);
 
         /**
          * @class org.zaproxy.clientapi.gen.ForcedUser
-         * 
+         *
          * @method setForcedUserModeEnabled
-         * 
+         *
          * @param String apikey
          * @param boolean bool
-         * 
+         *
          * @throws ClientApiException
          */
         clientApi.forcedUser.setForcedUserModeEnabled(API_KEY, true);
@@ -1645,7 +1704,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Method which will setup up authentication based on the specified method and return the ID of the authenticated user.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1685,7 +1744,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Search for all links and pages on the URL and raised passives alerts.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1695,7 +1754,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
      * @param targetURL
      *            of type String: the starting URL to investigate.
      * @param contextName
-     *            of type String: the name of the context. 
+     *            of type String: the name of the context.
      * @param contextId
      *            of type String: ID of the created context.
      * @param userid
@@ -1801,7 +1860,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Search for all links and pages on the URL and raised passives alerts.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -1868,7 +1927,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Scan all pages found at the URL and raised active alerts.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -2007,7 +2066,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
     /**
      * Stop ZAP if it has been previously started.
-     * 
+     *
      * @param listener
      *            of type BuildListener: the display log listener during the Jenkins job execution.
      * @param clientApi
@@ -2119,7 +2178,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param loadSession
          * @return
          */
@@ -2130,7 +2189,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param includedURL
          * @return
          */
@@ -2140,7 +2199,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /** Todo
-         * 
+         *
          * @param authScript
          * @return
          */
@@ -2151,7 +2210,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportTitle
          * @return
          */
@@ -2163,7 +2222,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportBy
          * @return
          */
@@ -2175,7 +2234,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportFor
          * @return
          */
@@ -2187,7 +2246,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportScanDate
          * @return
          */
@@ -2199,7 +2258,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportReportDate
          * @return
          */
@@ -2211,7 +2270,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportScanVersion
          * @return
          */
@@ -2223,7 +2282,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportReportVersion
          * @return
          */
@@ -2235,7 +2294,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
 
         /**
          * Todo
-         * 
+         *
          * @param exportreportReportDescription
          * @return
          */
@@ -2315,6 +2374,52 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
         }
 
         /**
+         * List model to choose the Standalone script file to be used by ZAProxy scan. It's called on the remote machine (if present) to load all standalone script files in the ZAP default dir of the build's machine. The jenkins job must be started once in order to create the workspace, so this method can load the list of standalone scripts. The standalone scripts must be stored in this directory : <zapSettingsDir>/scripts/standalone
+         * @param zapSettingsDir A string that represents an absolute path to the directory that ZAP uses.
+         * @return a {@link ListBoxModel}. It can be empty if zapDefaultDir doesn't contain any scripts file.
+         */
+        public ListBoxModel doFillStandaloneScriptNameItems(@QueryParameter String zapSettingsDir) {
+            ListBoxModel items = new ListBoxModel();
+
+            // No workspace before the first build, so workspace is null
+            if (workspace != null) {
+                File[] listFiles = {};
+                try {
+                    listFiles = workspace.act(new ScriptCallable(zapSettingsDir, NAME_STANDALONE_SCRIPTS_DIR_ZAP));
+                }
+                catch (IOException e) {
+                    // No listener because it's not during a build but it's on the job config page
+                    e.printStackTrace();
+                }
+                catch (InterruptedException e) {
+                    // No listener because it's not during a build but it's on the job config page
+                    e.printStackTrace();
+                }
+
+                items.add(""); // To not load a policy file, add a blank choice
+
+                // Add script authentication files to the list, with their extension
+                for (File listFile : listFiles)
+                    items.add(listFile.getName());
+            }
+            return items;
+        }
+
+        /**
+         * List model to choose the Standalone Script Engine to be executed by ZAProxy.
+         * @return a {@link ListBoxModel}. It can not be empty.
+         * TODO: Call API
+         */
+        public ListBoxModel doFillStandaloneScriptEngineItems() {
+            ListBoxModel items = new ListBoxModel();
+            items.add("");
+            items.add("Mozilla Zest");
+            items.add("Mozilla Rhino");
+            items.add("Oracle Nashorn");
+            return items;
+        }
+
+        /**
          * List model to choose the authentication script file to use by ZAProxy scan. It's called on the remote machine (if present) to load all authentication script files in the ZAP default dir of the build's machine. The jenkins job must be started once in order to create the workspace, so this method can load the list of authentication scripts the authentication scripts must be stored in this directory : <zapSettingsDir>/scripts/authentication
          *
          * @param zapSettingsDir
@@ -2328,7 +2433,7 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
             if (workspace != null) {
                 File[] listFiles = {};
                 try {
-                    listFiles = workspace.act(new AuthScriptCallable(zapSettingsDir));
+                    listFiles = workspace.act(new ScriptCallable(zapSettingsDir, NAME_AUTH_SCRIPTS_DIR_ZAP));
                 }
                 catch (IOException e) {
                     e.printStackTrace(); /* No listener because it's not during a build but it's on the job config page. */
@@ -2433,24 +2538,28 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     }
 
     /**
-     * This class allows to search all ZAP authentication script files in the ZAP default dir of the remote machine (or local machine if there is no remote machine). It's used in the plugin configuration page to fill the list of authentication script files and choose one of them.
+     * This class allows to search all ZAP script files in the ZAP default dir of the remote machine (or local machine if there is no remote machine). It's used in the plugin configuration page to fill the list of authentication script files and choose one of them.
      */
-    private static class AuthScriptCallable implements FileCallable<File[]> {
+    private static class ScriptCallable implements FileCallable<File[]> {
 
         private static final long serialVersionUID = 1L;
 
         private String zapSettingsDir;
+        private String scriptType;
 
-        public AuthScriptCallable(String zapSettingsDir) { this.zapSettingsDir = zapSettingsDir; }
+        public ScriptCallable(String zapSettingsDir, String scriptType) {
+            this.zapSettingsDir = zapSettingsDir;
+            this.scriptType = scriptType;
+        }
 
         @Override
         public File[] invoke(File f, VirtualChannel channel) {
             File[] listFiles = {};
 
-            Path pathAuthScriptsDir = Paths.get(zapSettingsDir, NAME_SCRIPTS_DIR_ZAP, NAME_AUTH_SCRIPTS_DIR_ZAP);
+            Path pathScriptsDir = Paths.get(zapSettingsDir, NAME_SCRIPTS_DIR_ZAP, scriptType);
 
-            if (Files.isDirectory(pathAuthScriptsDir)) {
-                File zapAuthScriptsDir = pathAuthScriptsDir.toFile();
+            if (Files.isDirectory(pathScriptsDir)) {
+                File zapScriptsDir = pathScriptsDir.toFile();
                 /* Create new filename filter (get only files with FILE_AUTH_SCRIPTS_JS_EXTENSION extension or FILE_AUTH_SCRIPTS_ZEST_EXTENSION extension). */
                 FilenameFilter scriptFilter = new FilenameFilter() {
 
@@ -2459,14 +2568,14 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
                         if (name.lastIndexOf('.') > 0) {
                             int lastIndex = name.lastIndexOf('.'); /* Get last index for '.' char. */
                             String str = name.substring(lastIndex); /* Get the extension. */
-                            if (str.equals(FILE_AUTH_SCRIPTS_JS_EXTENSION)) return true; /* Match path name extension. */
-                            if (str.equals(FILE_AUTH_SCRIPTS_ZEST_EXTENSION)) return true; /* Match path name extension. */
+                            if (str.equals(FILE_SCRIPTS_JS_EXTENSION)) return true; /* Match path name extension. */
+                            if (str.equals(FILE_SCRIPTS_ZEST_EXTENSION)) return true; /* Match path name extension. */
                         }
                         return false;
                     }
                 };
                 /* Returns pathnames for files and directory. */
-                listFiles = zapAuthScriptsDir.listFiles(scriptFilter);
+                listFiles = zapScriptsDir.listFiles(scriptFilter);
             }
             return listFiles;
         }
@@ -2719,6 +2828,21 @@ public class ZAPDriver extends AbstractDescribableImpl<ZAPDriver> implements Ser
     public String getEvaluatedIncludedURL() { return evaluatedIncludedURL; }
 
     public void setEvaluatedIncludedURL(String evaluatedIncludedURL) { this.evaluatedIncludedURL = evaluatedIncludedURL; }
+
+
+    /* Session Properties >> Standalone Script */
+    /* Standalone script to be executed before or after authentication */
+    private boolean executeStandaloneScript;
+
+    public boolean getExecuteStandaloneScript() { return executeStandaloneScript; }
+
+    private final String standaloneScriptName;
+
+    public String getStandaloneScriptName() { return standaloneScriptName; }
+
+    private final String standaloneScriptEngine;
+
+    public String getStandaloneScriptEngine() { return standaloneScriptEngine; }
 
     /* Session Properties >> Authentication */
     /* Authentication information for conducting spider, AJAX spider or scan as a user */
