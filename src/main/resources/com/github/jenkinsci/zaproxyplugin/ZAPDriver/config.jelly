@@ -171,7 +171,7 @@ SOFTWARE.
       <f:textbox clazz="required" />
     </f:entry>
     <f:entry>
-      <f:optionalBlock title="${%Spider}" field="spiderScanURL" inline="true">
+      <f:optionalBlock title="${%Spider Scan}" field="spiderScanURL" inline="true">
         <f:entry>
           <table width="100%">
             <f:optionalBlock title="${%Recurse}" field="spiderScanRecurse" checked="${instance == null || instance.spiderScanRecurse == true}" inline="true" />
