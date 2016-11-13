@@ -22,13 +22,15 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxy.report;
+
+import java.io.Serializable;
 
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
 
 /**
- * Used to generate ZAP report in html.
+ * This abstract class is used to generate report in ZAP available format.
  *
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
@@ -39,11 +41,30 @@ import org.zaproxy.clientapi.core.ClientApiException;
  * @author Ludovic Roucoux
  *
  */
-@SuppressWarnings("serial")
-public class ZAPReportHTML extends ZAPReport {
+public abstract class ZAPReport implements Serializable {
 
-    public ZAPReportHTML() { this.format = ZAPReport.REPORT_FORMAT_HTML; }
+    private static final long serialVersionUID = 1L;
+
+    protected static final String REPORT_FORMAT_XML = "xml";
+    protected static final String REPORT_FORMAT_HTML = "html";
+
+    /** The report format */
+    protected String format;
+
+    /**
+     * Generate a ZAP report in the format of daughter class.
+     *
+     * @param clientApi
+     *            of type ClientApi: the ZAP client API to call method.
+     * @param apikey
+     *            of type String: ZAP apikey. Can be null.
+     * @return an array of byte containing the report.
+     * @throws ClientApiException
+     */
+    public abstract byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException;
+
+    public String getFormat() { return format; }
 
     @Override
-    public byte[] generateReport(ClientApi clientApi, String apikey) throws ClientApiException { return clientApi.core.htmlreport(apikey); }
+    public String toString() { return getFormat(); }
 }

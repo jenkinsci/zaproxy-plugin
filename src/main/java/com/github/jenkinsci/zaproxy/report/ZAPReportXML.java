@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxy.report;
 
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
