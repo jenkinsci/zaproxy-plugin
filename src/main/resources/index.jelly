@@ -1,7 +1,7 @@
 <!--
 The MIT License (MIT)
 
-Copyright (c) 2015 ludovicRoucoux
+Copyright (c) 2016 Official ZAP Jenkins Plugin and its related class files.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,7 @@ SOFTWARE.
 -->
 
 <?jelly escape-by-default='true'?>
-<!--
-This view is used to render the installed plugins page.
--->
+<!-- This view is used to render the installed plugins page. -->
 <div>
-This plugin allow you to launch ZAProxy via Jenkins.
+The <a href="https://wiki.jenkins-ci.org/display/JENKINS/zaproxy+plugin">Official OWASP ZAP Jenkins plugin</a> is a Jenkins plugin which extends the functionality of the <a href="https://www.owasp.org/index.php/OWASP_Zed_Attack_Proxy_Project">ZAP</a> security tool into a CI Environment.
 </div>
