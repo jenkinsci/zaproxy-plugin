@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin;
+package com.github.jenkinsci.zaproxy;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -34,7 +34,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URLEncoder;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -62,8 +61,8 @@ import org.zaproxy.clientapi.core.ApiResponseSet;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
 
-import com.github.jenkinsci.zaproxyplugin.report.ZAPReport;
-import com.github.jenkinsci.zaproxyplugin.report.ZAPReportCollection;
+import com.github.jenkinsci.zaproxy.report.ZAPReport;
+import com.github.jenkinsci.zaproxy.report.ZAPReportCollection;
 
 import hudson.EnvVars;
 import hudson.Extension;

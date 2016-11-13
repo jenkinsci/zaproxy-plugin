@@ -22,15 +22,17 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin.report;
+package com.github.jenkinsci.zaproxy;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
-/**
- * This class contains all ZAPreport instance of the application. It's a singleton class so the application contains only one instance of the class.
- *
+import org.kohsuke.stapler.DataBoundConstructor;
+
+import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
+import hudson.model.Descriptor;
+
+/*
  * @author Goran Sarenkapa
  * @author Mostafa AbdelMoez
  * @author Tanguy de Lignières
@@ -38,34 +40,48 @@ import java.util.Map;
  * @author Thilina Madhusanka
  * @author Johann Ollivier-Lapeyre
  * @author Ludovic Roucoux
- *
+ * 
  */
-public class ZAPReportCollection implements Serializable {
+
+/**
+ * This object allows to add a ZAP command line option.
+ *
+ * @see <a href="https://code.google.com/p/zaproxy/wiki/HelpCmdline"> https://code.google.com/p/zaproxy/wiki/HelpCmdline</a>
+ */
+public class ZAPCmdLine extends AbstractDescribableImpl<ZAPCmdLine> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static ZAPReportCollection uniqueInstance = new ZAPReportCollection();
-
-    /** Map where key is the report format represented by a String and value is a ZAPreport object allowing to generate a report with the corresponding format. */
-    private Map<String, ZAPReport> mapFormatReport;
-
-    private ZAPReportCollection() {
-        mapFormatReport = new HashMap<String, ZAPReport>();
-
-        /* ZAPReport's creation. */
-        ZAPReportXML reportXML = new ZAPReportXML();
-        ZAPReportHTML reportHTML = new ZAPReportHTML();
-
-        /* Add ZAPReport to the map. */
-        mapFormatReport.put(reportXML.getFormat(), reportXML);
-        mapFormatReport.put(reportHTML.getFormat(), reportHTML);
+    @DataBoundConstructor
+    public ZAPCmdLine(String cmdLineOption, String cmdLineValue) {
+        this.cmdLineOption = cmdLineOption;
+        this.cmdLineValue = cmdLineValue;
     }
 
-    public static ZAPReportCollection getInstance() {
-        if (uniqueInstance == null) uniqueInstance = new ZAPReportCollection();
+    /** Configuration key for the command line */
+    private final String cmdLineOption;
 
-        return uniqueInstance;
+    public String getCmdLineOption() { return cmdLineOption; }
+
+    /** Configuration value for the command line */
+    private final String cmdLineValue;
+
+    public String getCmdLineValue() { return cmdLineValue; }
+
+    @Override
+    public String toString() {
+        String s = "";
+        s += "\n\t\tOPTION : [ " + cmdLineOption + " ]\n";
+        s += "\t\tVALUE  : [ " + cmdLineValue + " ]\n";
+        return s;
     }
 
-    public Map<String, ZAPReport> getMapFormatReport() { return mapFormatReport; }
+    @Extension
+    public static class ZAPCmdLineDescriptorImpl extends Descriptor<ZAPCmdLine> {
+
+        @Override
+        public String getDisplayName() {
+            return "ZAP Command Line";
+        }
+    }
 }

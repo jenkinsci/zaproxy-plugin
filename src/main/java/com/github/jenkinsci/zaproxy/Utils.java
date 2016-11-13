@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.github.jenkinsci.zaproxyplugin;
+package com.github.jenkinsci.zaproxy;
 
 import java.text.MessageFormat;
 
