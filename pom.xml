@@ -12,12 +12,11 @@
   </parent>
   <groupId>com.github.jenkinsci</groupId>
   <artifactId>zaproxy</artifactId>
-  <version>2.0.0-DEV-SNAPSHOT</version>
+  <version>2.0.0</version>
   <packaging>hpi</packaging>
 
-  <name>Official ZAP Jenkins Plugin</name>
-  <description>This plugin allow you to launch the Zed Attack Proxy security tool via Jenkins.</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/ZAProxy+Plugin</url>
+  <name>Official OWASP Zed Attack Proxy Jenkins Plugin</name>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/zaproxy+plugin</url>
   <licenses>
     <license>
       <name>MIT License</name>
@@ -66,4 +65,5 @@
       <version>1.0.0</version>
     </dependency>
   </dependencies>
+  <description>The Official OWASP ZAP Jenkins plugin is a Jenkins plugin which extends the functionality of the ZAP security tool into a CI Environment.</description>
 </project>
