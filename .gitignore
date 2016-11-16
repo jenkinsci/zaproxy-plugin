@@ -1,6 +1,7 @@
+target
+work
 *.class
-.directory
-.project
+
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
@@ -11,4 +12,15 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
-/target/
+
+# IntelliJ project files
+*.iml
+*.ipr
+*.iws
+.idea
+
+# eclipse project file
+.settings
+.classpath
+.project
+build
