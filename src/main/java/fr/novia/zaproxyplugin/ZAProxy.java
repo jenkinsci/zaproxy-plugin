@@ -55,8 +55,10 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,6 +78,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.zaproxy.clientapi.core.ApiResponse;
 import org.zaproxy.clientapi.core.ApiResponseElement;
+import org.zaproxy.clientapi.core.ApiResponseList;
 import org.zaproxy.clientapi.core.ClientApi;
 import org.zaproxy.clientapi.core.ClientApiException;
  
@@ -145,6 +148,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	
 	/** URL to attack by ZAProxy */
 	private final String targetURL;
+        
+        /** URL to include in scan */
+        private final String includedUrl;
 	
 	/** Exclude url from scan **/
 	private final String excludedUrl;
@@ -323,6 +329,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.loginUrl="";
 		this.loggedInIndicator="";
 		this.excludedUrl="";
+                this.includedUrl="";
 		this.scanMode="";
 		this.authenticationMode="";
 		this.scriptUsername="";
@@ -344,7 +351,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
+			String filenameLoadSession, String targetURL,String includedUrl, String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
 			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
 			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
 			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
@@ -357,6 +364,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.timeoutInSec = timeoutInSec;
 		this.filenameLoadSession = filenameLoadSession;
 		this.targetURL = targetURL;
+                this.includedUrl = includedUrl;
 		this.excludedUrl=excludedUrl;
 		this.scanMode=scanMode;
 		this.authenticationMode=authenticationMode;
@@ -418,7 +426,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s += "zapDefaultDir ["+zapDefaultDir+"]\n";
 		s += "chosenPolicy ["+chosenPolicy+"]\n";
 		
-		s += "targetURL ["+targetURL+"]\n";		
+		s += "targetURL ["+targetURL+"]\n";	
+                s += "includedUrl ["+includedUrl+"\n";
 		s += "excludedUrl ["+excludedUrl+"]\n";
 		s += "scanMode ["+scanMode+"]\n";
 		s += "authenticationMode ["+authenticationMode+"]\n";
@@ -502,6 +511,11 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	public String getTargetURL() {
 		return targetURL;
 	}
+        
+        public String getIncludedUrl() {
+            return includedUrl;
+        }
+        
 	public String getExcludedUrl() {
 		return excludedUrl;
 	}
@@ -1075,7 +1089,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			 */
 			
 			//setup context
-			this.contextId=setUpContext(listener,targetURL,excludedUrl,zapClientAPI);
+			this.contextId=setUpContext(listener,targetURL,includedUrl,excludedUrl,zapClientAPI);
 			
 			
 			
@@ -1345,7 +1359,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * @return the context ID of the context
 	 * @throws ClientApiException
 	 */
-	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
+	private String setUpContext(BuildListener listener, String url,String includedUrl, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
 		url=url.trim();		 
@@ -1366,6 +1380,49 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		zapClientAPI.context.includeInContext(API_KEY,contextName,contextURL);
 		listener.getLogger().println("URL "+url+" added to Context ["+contextIdTemp+"]");
 		
+                
+                /**
+                 * 
+                 * Includes URLs for scanning
+                 * 
+                 * By accessing the URL and checking "Scan URL" on the plugin job's GUI
+                 * it will automatically active scan all accessed URLs
+                 * 
+                 * Splits the URLs inserted in the text area by new line and accesses each individually
+                 */                
+                if (!includedUrl.equals("")) {
+                    try {
+                        String[] urlsToInclude = includedUrl.split("\n");
+
+                        try {
+                            URL targetURL = new URL(url);
+
+                            for (int i = 0; i < urlsToInclude.length; i++) {
+                                if (!urlsToInclude[i].isEmpty()) {
+                                    try {
+                                        URL includeURL = new URL(urlsToInclude[i]);
+                                        if (targetURL.getHost().equalsIgnoreCase(includeURL.getHost())) {
+                                            zapClientAPI.accessUrl(urlsToInclude[i].trim());
+                                            listener.getLogger().println("URL included manually for scanning: " + urlsToInclude[i].trim());
+                                        } else {
+                                            listener.getLogger().println("URL NOT included for scanning, Reason: [different domain]: " + urlsToInclude[i].trim());
+                                        }
+                                    } catch (MalformedURLException e) {
+                                        e.printStackTrace();
+                                        listener.error(ExceptionUtils.getStackTrace(e));
+                                    }
+                                }
+                            }
+                        } catch (ClientApiException e) {
+                            e.printStackTrace();
+                            listener.error(ExceptionUtils.getStackTrace(e));
+                        }
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
+                        listener.error(ExceptionUtils.getStackTrace(e));
+                    }
+                }
+                
 		//excluded urls from context
 		if (!excludedUrl.equals("")) {
 			
@@ -1493,7 +1550,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// Make sure we have at least one user
 		// extract user id 
 		userIdTemp = extractUserId(zapClientAPI.users.newUser(API_KEY, contextId, username));
-
+                
 		// Prepare the configuration in a format similar to how URL parameters are formed. This
 		// means that any value we add for the configuration values has to be URL encoded.
 		StringBuilder userAuthConfig = new StringBuilder();
@@ -1592,6 +1649,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			Thread.sleep(1000);
 		}
 	}
+        
 
 	/**
 	 * Search for all links and pages on the URL and raised passives alerts

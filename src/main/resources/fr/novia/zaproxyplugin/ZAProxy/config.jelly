@@ -79,7 +79,10 @@ SOFTWARE.
 	
 		<f:entry title="${%Target URL}" field="targetURL">
 			<f:textbox clazz="required" />
-		</f:entry>		
+		</f:entry>	
+                <f:entry title="${%urlIncludeContext}" field="includedUrl">
+			<f:textarea />
+                </f:entry>	
 		<f:entry title="${%URL to exclude from context}" field="excludedUrl">
 			<f:textarea />
 		</f:entry>
