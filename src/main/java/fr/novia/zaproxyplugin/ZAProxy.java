@@ -178,8 +178,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Authentication script name used (script based authentication)*/
 	private final String authenticationScriptName;
 	
-	
-	
 	/** Username for the defined user (form based authentication)*/
 	private final String username;
 
@@ -203,6 +201,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	/** Id of the newly created context*/
 	private String contextId;
+
+	/** Name of the newly created context*/
+	private String contextName;
 
 	/** Id of the newly created user*/
 	private String userId;
@@ -247,8 +248,13 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	 * ArrayList because it needs to be Serializable (whereas List is not Serializable)
 	 */
 	private final ArrayList<ZAPcmdLine> cmdLinesZAP;
-	
-	/** The jdk to use to start ZAProxy */
+
+    /** List of all Authentication Script Parameters
+     * ArrayList because it needs to be Serializable (whereas List is not Serializable)
+     */
+    private final ArrayList<ZAPauthScriptParam> authScriptParams;
+
+    /** The jdk to use to start ZAProxy */
 	private final String jdk;
 
 
@@ -283,15 +289,32 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	/** Filetr issues by resource type */
 	private final boolean filterIssuesByResourceType;
 
+	/** Spider Maxchildren for the run */
+	private final String confSpiderMaxChildren;
+
+	/** Spider Recurse for the run */
+	private final String confSpiderRecurse;
+
+	/** Scanner Recurse for the run */
+	private final String confScannerRecurse;
+
+	/** Scanner Method for the run */
+	private final String confScannerMethod;
+
+	/** Scanner Postdata for the run */
+	private final String confScannerPostdata;
+
+	/** Scanner Inscopeonly for the run */
+	private final String confScannerInscopeonly;
 
 	/**
      * @deprecated
      * Old constructor 
      */
 	@Deprecated
-	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL,boolean scanURLAsUser,
-			boolean saveReports, List<String> chosenFormats, String filenameReports,boolean saveSession, String filenameSaveSession,String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, boolean createJiras, String projectKey,  String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType ) {
+	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec, String filenameLoadSession, String targetURL, boolean spiderURL, boolean scanURL, boolean scanURLAsUser,
+                   boolean saveReports, List<String> chosenFormats, String filenameReports, boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
+                   List<ZAPcmdLine> cmdLinesZAP, List<ZAPauthScriptParam> authScriptParams, String jdk, boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -310,6 +333,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
 		this.ajaxSpiderURL=false;
 		this.ajaxSpiderURLAsUser=false;
 		this.jdk = jdk;
@@ -329,7 +353,6 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.scriptPassword="" ;
 		this.scriptLoggedInIndicator="";
 		this.authenticationScriptName="";
-
  
 		this.projectKey=projectKey;
 		this.createJiras=createJiras;
@@ -338,18 +361,26 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.contextName = "";
+		this.confSpiderMaxChildren = "";
+		this.confSpiderRecurse  = "false";
+		this.confScannerRecurse = "false";
+		this.confScannerMethod = null;
+		this.confScannerPostdata = null;
+		this.confScannerInscopeonly = "false";
 
 		System.out.println(this.toString());
 	}
 
 	@DataBoundConstructor
 	public ZAProxy(boolean autoInstall, String toolUsed, String zapHome, int timeoutInSec,
-			String filenameLoadSession, String targetURL,String excludedUrl, String scanMode, String authenticationMode,boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL,boolean ajaxSpiderURLAsUser, 
-			boolean scanURL, boolean scanURLAsUser,boolean saveReports, List<String> chosenFormats, String filenameReports,
-			boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
-			List<ZAPcmdLine> cmdLinesZAP, String jdk, String username, String password, String usernameParameter, 
-			String passwordParameter, String extraPostData,String loginUrl, String loggedInIndicator,String scriptUsername, String scriptPassword,String scriptLoggedInIndicator, String authenticationScriptName ,
-			boolean createJiras, String projectKey,String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType) {
+                   String filenameLoadSession, String targetURL, String excludedUrl, String scanMode, String authenticationMode, boolean spiderURL, boolean spiderAsUser, boolean ajaxSpiderURL, boolean ajaxSpiderURLAsUser,
+                   boolean scanURL, boolean scanURLAsUser, boolean saveReports, List<String> chosenFormats, String filenameReports,
+                   boolean saveSession, String filenameSaveSession, String zapDefaultDir, String chosenPolicy,
+                   List<ZAPcmdLine> cmdLinesZAP, List<ZAPauthScriptParam> authScriptParams, String jdk, String username, String password, String usernameParameter,
+                   String passwordParameter, String extraPostData, String loginUrl, String loggedInIndicator, String scriptUsername, String scriptPassword, String scriptLoggedInIndicator, String authenticationScriptName,
+                   boolean createJiras, String projectKey, String assignee, boolean alertHigh, boolean alertMedium, boolean alertLow, boolean filterIssuesByResourceType, String contextName,
+				   String confSpiderMaxChildren, String confSpiderRecurse, String confScannerRecurse, String confScannerMethod, String confScannerPostdata, String confScannerInscopeonly) {
 		
 		this.autoInstall = autoInstall;
 		this.toolUsed = toolUsed;
@@ -373,14 +404,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.zapDefaultDir = zapDefaultDir;
 		this.chosenPolicy = chosenPolicy;
 		this.cmdLinesZAP = cmdLinesZAP != null ? new ArrayList<ZAPcmdLine>(cmdLinesZAP) : new ArrayList<ZAPcmdLine>();
-		
+        this.authScriptParams = authScriptParams != null ? new ArrayList<ZAPauthScriptParam>(authScriptParams) : new ArrayList<ZAPauthScriptParam>();
+
 		this.spiderAsUser=spiderAsUser;
 		
 		this.scriptUsername=scriptUsername;
 		this.scriptPassword=scriptPassword;
 		this.scriptLoggedInIndicator=scriptLoggedInIndicator;
 		this.authenticationScriptName=authenticationScriptName;
-		
+
 		this.username=username;
 		this.password=password;
 		this.usernameParameter=usernameParameter;
@@ -398,6 +430,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		this.alertMedium=alertMedium;
 		this.alertLow=alertLow;
 		this.filterIssuesByResourceType=filterIssuesByResourceType;
+		this.contextName=contextName;
+
+		this.confSpiderMaxChildren = confSpiderMaxChildren;
+		this.confSpiderRecurse= confSpiderRecurse.isEmpty() ? "false" : confSpiderRecurse;
+		this.confScannerRecurse = confScannerRecurse.isEmpty() ? "false" : confScannerRecurse;
+		this.confScannerMethod = confScannerMethod == null || confScannerMethod.isEmpty() ? null : confScannerMethod;
+		this.confScannerPostdata = confScannerPostdata ==null || confScannerPostdata.isEmpty() ? null : confScannerPostdata;
+		this.confScannerInscopeonly = confScannerInscopeonly.isEmpty() ? "false" : confScannerInscopeonly;
+
 		System.out.println(this.toString());
 	}
 	
@@ -457,7 +498,15 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		s+= "alertMedium ["+alertMedium+"]\n";
 		s+= "alertLow ["+alertLow+"]\n";
 		s+="filterIssuesByResourceType["+filterIssuesByResourceType+"]\n";
-		
+		s+="contextName["+contextName+"]\n";
+
+		s += "confSpiderMaxChildren ["+confSpiderMaxChildren+"]\n";
+		s += "confSpiderRecurse ["+confSpiderRecurse+"]\n";
+		s += "confScannerRecurse ["+confScannerRecurse+"]\n";
+		s += "confScannerMethod ["+confScannerMethod+"]\n";
+		s += "confScannerPostdata ["+confScannerPostdata+"]\n";
+		s += "confScannerInscopeonly ["+confScannerInscopeonly+"]\n";
+
 		return s;
 	}
 	
@@ -603,6 +652,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		return cmdLinesZAP;
 	}
 
+    public List<ZAPauthScriptParam> getAuthScriptParams() {return authScriptParams;}
+
 	public boolean getSpiderAsUser() {
 		return spiderAsUser;
 	}
@@ -668,6 +719,37 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 
 	public boolean getfilterIssuesByResourceType(){ return filterIssuesByResourceType; }
 
+	public String getcontextName(){ return contextName; }
+
+	/**
+	 * @return the confSpiderMaxChildren
+	 */
+	public String getconfSpiderMaxChildren() {return confSpiderMaxChildren;}
+
+	/**
+	 * @return the confSpiderRecurse
+	 */
+	public String getconfSpiderRecurse() {return confSpiderRecurse;}
+
+	/**
+	 * @return the confScannerRecurse
+	 */
+	public String getconfScannerRecurse() {return confScannerRecurse;}
+
+	/**
+	 * @return the confScannerMethod
+	 */
+	public String getconfScannerMethod() {return confScannerMethod;}
+
+	/**
+	 * @return the confScannerPostdata
+	 */
+	public String getconfScannerPostdata() {return confScannerPostdata;}
+
+	/**
+	 * @return the confScannerInscopeonly
+	 */
+	public String getconfScannerInscopeonly() {return confScannerInscopeonly;}
 
 	/*gets and sets the values from the credentials and base urls
 	* method call is from Zaproxybuilder*/
@@ -961,6 +1043,21 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 			}
 		}
 	}
+
+    /**
+     * Add list of authentication script parameters
+     * @param s stringbuilder to attach authentication script parameter
+     */
+    private void addZAPAuthScriptParam(StringBuilder s) throws UnsupportedEncodingException{
+        for(ZAPauthScriptParam authScriptParam : authScriptParams) {
+            if(authScriptParam.getScriptParameterName() != null && !authScriptParam.getScriptParameterName().isEmpty()) {
+                s.append("&" + URLEncoder.encode(authScriptParam.getScriptParameterName(), "UTF-8") + "=");
+            }
+            if(authScriptParam.getScriptParameterValue() != null && !authScriptParam.getScriptParameterValue().isEmpty()) {
+				s.append(URLEncoder.encode(authScriptParam.getScriptParameterValue(), "UTF-8").toString());
+            }
+        }
+    }
 	
 	/**
 	 * Wait for ZAProxy initialization, so it's ready to use at the end of this method
@@ -1348,9 +1445,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private String setUpContext(BuildListener listener, String url, String excludedUrl,ClientApi zapClientAPI) 
 				throws ClientApiException {
 		
-		url=url.trim();		 
-		
-		String contextName="context1";//name of the Context to be created
+		url=url.trim();
+
+		String contextName = getcontextName() == null ||  getcontextName().isEmpty() ? "Jenkins Default Context": getcontextName();//name of the Context to be created
 		String contextURL="\\Q"+url+"\\E.*";//url to be added to the context (the same url given by the user to be scanned)
 		
 		
@@ -1457,6 +1554,12 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		// means that any value we add for the configuration values has to be URL encoded.
 		StringBuilder scriptBasedConfig = new StringBuilder();
 		scriptBasedConfig.append("scriptName=").append(URLEncoder.encode(scriptName, "UTF-8"));
+
+        // Adds command line arguments if it's provided
+        if(!authScriptParams.isEmpty()) {
+            addZAPAuthScriptParam(scriptBasedConfig);
+        }
+
 		listener.getLogger().println("Setting Script based authentication configuration as: " + scriptBasedConfig.toString());
 		
 		zapClientAPI.authentication.setAuthenticationMethod(API_KEY, contextId, "scriptBasedAuthentication",scriptBasedConfig.toString());
@@ -1582,7 +1685,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 	private void spiderURL(final String url, BuildListener listener, ClientApi zapClientAPI) 
 			throws ClientApiException, InterruptedException {
 		// Method signature : scan(String key, String url, String maxChildren, String recurse)
-		zapClientAPI.spider.scan(API_KEY, url, "", "");
+		zapClientAPI.spider.scan(API_KEY, url, confSpiderMaxChildren, confSpiderRecurse);
 
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
@@ -1611,7 +1714,8 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		
 		// Start spider as user
-		zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, "0", "");
+		// Method signature : scanAsUser(String apikey, String url, contextId, userId, String maxChildren, String recurse)
+		zapClientAPI.spider.scanAsUser(API_KEY, url, contextId, userId, confSpiderMaxChildren, confSpiderRecurse);
 		
 		// Wait for complete spidering (equal to 100)
 		// Method signature : status(String scanId)
@@ -1667,7 +1771,7 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 		
 		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
-		zapClientAPI.ascan.scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
+		zapClientAPI.ascan.scan(API_KEY, url, confScannerRecurse, confScannerInscopeonly, chosenPolicy, confScannerMethod, confScannerPostdata);
 
 		// Wait for complete scanning (equal to 100)
 		// Method signature : status(String scanId)
@@ -1700,9 +1804,9 @@ public class ZAProxy extends AbstractDescribableImpl<ZAProxy> implements Seriali
 							+ chosenPolicy + "]");
 		}
 		
-		// Method signature : scan(String apikey, String url, String recurse, String inscopeonly, String scanpolicyname, String method, String postdata)
+		// Method signature : scan(String apikey, String url, String contextId, String userId, String recurse, String scanpolicyname, String method, String postdata)
 		// Use a default policy if chosenPolicy is null or empty
-		zapClientAPI.ascan.scanAsUser(API_KEY, url, contextId, userId,"true", chosenPolicy, null, null);//arg2, arg3, arg4, arg5, arg6, arg7)scan(API_KEY, url, "true", "false", chosenPolicy, null, null);
+		zapClientAPI.ascan.scanAsUser(API_KEY, url, contextId, userId, confScannerRecurse, chosenPolicy, confScannerMethod, confScannerPostdata);//arg2, arg3, arg4, arg5, arg6, arg7)scan(API_KEY, url, contextId, userId, chosenPolicy, null, null);
 
 		// Wait for complete scanning (equal to 100)
 		// Method signature : status(String scanId)
