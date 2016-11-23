@@ -42,7 +42,7 @@ SOFTWARE.
 		
 		<f:entry title="${%Override ZAProxy port}" field="zapProxyPort"
 		description="Default Port is : ${descriptor.zapProxyDefaultPort} (${%Configured in admin mode})">
-			<f:number default="${descriptor.zapProxyDefaultPort}" clazz="required positive-number" />
+			<f:textbox default="${descriptor.zapProxyDefaultPort}" clazz="required" />
 		</f:entry>
 		
 	</f:section>
